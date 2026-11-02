@@ -1,0 +1,3579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Upstream Kart GP: PETRONAS FLNG Rush</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,600;0,700;1,700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            user-select: none;
+            -webkit-user-select: none;
+            box-sizing: border-box;
+        }
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #101820;
+            font-family: 'Chakra Petch', sans-serif;
+            color: #fff;
+        }
+        .font-racing {
+            font-family: 'Orbitron', sans-serif;
+        }
+        #game-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        /* Clean, calm PETRONAS Teal Accent Bar */
+        .hazard-border {
+            background: linear-gradient(90deg, #00A19C 0%, #00F5E1 50%, #D4DBE2 100%);
+        }
+        .glass-panel {
+            background: rgba(16, 24, 32, 0.92);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 161, 156, 0.4);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+        }
+        .kart-card {
+            transition: all 0.2s ease;
+            background: rgba(23, 34, 45, 0.85);
+        }
+        .kart-card:hover {
+            transform: translateY(-3px);
+            border-color: rgba(0, 245, 225, 0.6);
+        }
+        .kart-card.selected {
+            border-color: #00F5E1;
+            background: rgba(0, 161, 156, 0.18);
+            box-shadow: 0 4px 20px rgba(0, 161, 156, 0.3);
+        }
+        .btn-arcade {
+            background: linear-gradient(180deg, #00A19C 0%, #00827E 100%);
+            border-bottom: 3px solid #004d4a;
+            color: #ffffff;
+            transition: all 0.15s ease;
+        }
+        .btn-arcade:hover {
+            background: linear-gradient(180deg, #00bdb7 0%, #009691 100%);
+            transform: translateY(-1px);
+        }
+        .btn-arcade:active {
+            transform: translateY(2px);
+            border-bottom-width: 1px;
+        }
+        @keyframes pulseGlow {
+            0%, 100% { transform: scale(1); filter: drop-shadow(0 0 8px rgba(0, 161, 156, 0.9)); }
+            50% { transform: scale(1.06); filter: drop-shadow(0 0 18px rgba(0, 245, 225, 1)); }
+        }
+        .roulette-active {
+            animation: pulseGlow 0.4s infinite;
+        }
+        .touch-btn {
+            background: rgba(16, 24, 32, 0.82);
+            border: 2px solid rgba(0, 161, 156, 0.75);
+            backdrop-filter: blur(4px);
+            touch-action: manipulation;
+        }
+        .touch-btn:active, .touch-btn.pressed {
+            background: rgba(0, 161, 156, 0.9);
+            color: #101820;
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 3D WebGL Canvas -->
+    <canvas id="game-canvas"></canvas>
+
+    <!-- ==================== MULTI-PAGE START / SETUP WIZARD ==================== -->
+    <div id="start-screen" class="fixed inset-0 z-30 flex items-center justify-center p-4 sm:p-6 overflow-y-auto bg-[#101820]/90 backdrop-blur-md">
+        <div class="glass-panel rounded-2xl max-w-4xl w-full p-5 sm:p-8 my-auto">
+            <!-- Top Accent Line -->
+            <div class="hazard-border h-1.5 w-full rounded-full mb-5"></div>
+            
+            <!-- Shared Header + Step Indicator -->
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-800 pb-4 mb-6">
+                <div>
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#00A19C]/15 border border-[#00A19C]/40 text-[#00F5E1] text-xs font-semibold tracking-wider uppercase mb-1.5">
+                        <span>❄️ PETRONAS UPSTREAM & FLNG CIRCUIT</span>
+                    </div>
+                    <h1 class="font-racing text-2xl sm:text-3xl font-black tracking-tight text-white">
+                        PETRONAS LNG KART GP
+                    </h1>
+                </div>
+
+                <!-- 4-Step Progress Pills -->
+                <div class="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs font-racing font-bold">
+                    <button id="step-pill-1" class="px-2.5 py-1.5 rounded-lg bg-[#00A19C] text-white border border-[#00F5E1] cursor-pointer transition">1. PROFILE</button>
+                    <span class="text-slate-600">›</span>
+                    <button id="step-pill-2" class="px-2.5 py-1.5 rounded-lg bg-slate-900 text-slate-400 border border-slate-700 cursor-pointer transition">2. PLAYERS</button>
+                    <span class="text-slate-600">›</span>
+                    <button id="step-pill-3" class="px-2.5 py-1.5 rounded-lg bg-slate-900 text-slate-400 border border-slate-700 cursor-pointer transition">3. CONTROLS</button>
+                    <span class="text-slate-600">›</span>
+                    <button id="step-pill-4" class="px-2.5 py-1.5 rounded-lg bg-slate-900 text-slate-400 border border-slate-700 cursor-pointer transition">4. START</button>
+                </div>
+            </div>
+
+            <!-- ==================== PAGE 1: REGISTER USERNAME & LEADERBOARD ==================== -->
+            <div id="menu-page-1" class="space-y-5">
+                <div class="text-center sm:text-left">
+                    <h2 class="font-racing text-lg sm:text-xl font-bold text-[#00F5E1] uppercase">Step 1: Register Driver & Overall Leaderboard</h2>
+                    <p class="text-xs text-slate-400 mt-0.5">Enter your driver callsign to track your cumulative championship points across all 5-lap races.</p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                    <!-- Username Registration Box -->
+                    <div class="bg-slate-900/90 p-5 rounded-xl border border-[#00A19C]/50 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-4">
+                                <span class="text-xs font-racing font-bold uppercase tracking-wider text-[#00F5E1]">📝 DRIVER REGISTRATION</span>
+                                <span id="auth-status-badge" class="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-400">Connecting...</span>
+                            </div>
+                            <div class="space-y-3.5">
+                                <div>
+                                    <label class="block text-xs uppercase tracking-wider text-slate-300 font-bold mb-1.5">👤 Player 1 Username</label>
+                                    <input id="p1-username-input" type="text" maxlength="16" placeholder="e.g. Captain_Amir" value="FLNG_Racer1"
+                                        class="w-full px-3.5 py-2.5 rounded-lg bg-slate-950 border border-[#00A19C] text-white text-sm font-bold focus:outline-none focus:border-[#00F5E1]" />
+                                </div>
+                                <div id="p2-username-wrap">
+                                    <label class="block text-xs uppercase tracking-wider text-amber-300 font-bold mb-1.5">👥 Player 2 Username <span class="text-[10px] text-slate-400 font-normal">(Used if 2P mode selected)</span></label>
+                                    <input id="p2-username-input" type="text" maxlength="16" placeholder="e.g. Turbo_Zara" value="Cryo_Racer2"
+                                        class="w-full px-3.5 py-2.5 rounded-lg bg-slate-950 border border-amber-400/80 text-white text-sm font-bold focus:outline-none focus:border-amber-200" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4 pt-3 border-t border-slate-800 text-xs text-slate-300 leading-relaxed">
+                            🏆 <b class="text-[#00F5E1]">How Overall Score Works:</b><br>
+                            Earn Placement Points (<b class="text-white">1st: 1000</b>, <b class="text-white">2nd: 750</b>, <b class="text-white">3rd: 550</b>, <b class="text-white">4th: 400</b>) plus a <b class="text-white">Speed Time Bonus</b>! Racing again with the same username adds to your total score.
+                        </div>
+                    </div>
+
+                    <!-- Live Top Leaderboard Preview -->
+                    <div class="bg-slate-900/90 p-5 rounded-xl border border-slate-800 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
+                                <h3 class="text-xs font-racing font-bold uppercase tracking-wider text-amber-300">🏆 OVERALL LNG LEADERBOARD</h3>
+                                <span class="text-[10px] text-slate-400">Top Registered Drivers</span>
+                            </div>
+                            <div id="start-leaderboard-list" class="space-y-2 max-h-56 overflow-y-auto pr-1 text-xs">
+                                <div class="text-slate-400 text-xs py-4 text-center">Loading leaderboard scores...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end pt-3 border-t border-slate-800">
+                    <button id="btn-next-to-2" class="btn-arcade font-racing px-7 py-3 rounded-xl font-bold text-sm tracking-wider uppercase cursor-pointer">
+                        NEXT: SELECT PLAYERS & KART →
+                    </button>
+                </div>
+            </div>
+
+            <!-- ==================== PAGE 2: SELECT PLAYERS (1P / 2P) & KART ==================== -->
+            <div id="menu-page-2" class="hidden space-y-5">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                        <h2 class="font-racing text-lg sm:text-xl font-bold text-[#00F5E1] uppercase">Step 2: Select Players & LNG Kart</h2>
+                        <p class="text-xs text-slate-400">Choose Single Player or 2-Player Split-Screen, then pick your LNG role.</p>
+                    </div>
+                    <span id="p2-select-hint" class="hidden text-xs font-semibold px-3 py-1 rounded-full bg-amber-400/15 border border-amber-400/50 text-amber-300">
+                        Click a card for P1 (Teal), then click a 2nd card for P2 (Gold)
+                    </span>
+                </div>
+
+                <!-- Player Mode Toggle (1P vs 2P Split-Screen) -->
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-slate-900/90 p-4 rounded-xl border border-slate-800">
+                    <div>
+                        <div class="text-xs font-bold uppercase tracking-wider text-[#00F5E1]">Select Player Mode</div>
+                        <div id="mode-helper-text" class="text-xs text-slate-300 mt-0.5">Single Player vs 3 AI Drivers</div>
+                    </div>
+                    <div class="flex gap-2.5 w-full sm:w-auto">
+                        <button id="btn-mode-1p" class="flex-1 sm:flex-initial px-5 py-2.5 rounded-xl font-racing text-xs font-bold uppercase bg-[#00A19C] text-white border border-[#00F5E1] transition cursor-pointer">
+                            👤 1 Player
+                        </button>
+                        <button id="btn-mode-2p" class="flex-1 sm:flex-initial px-5 py-2.5 rounded-xl font-racing text-xs font-bold uppercase bg-slate-800 text-slate-300 border border-slate-700 hover:border-[#00F5E1] transition cursor-pointer">
+                            👥 2 Players (Split-Screen)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Selectable Drivers & Karts -->
+                <div id="kart-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                    <!-- Populated by JS -->
+                </div>
+
+                <div class="flex justify-between items-center pt-3 border-t border-slate-800">
+                    <button id="btn-back-to-1" class="glass-panel font-racing px-5 py-3 rounded-xl text-xs font-bold text-slate-300 hover:text-white uppercase cursor-pointer">
+                        ← BACK
+                    </button>
+                    <button id="btn-next-to-3" class="btn-arcade font-racing px-7 py-3 rounded-xl font-bold text-sm tracking-wider uppercase cursor-pointer">
+                        NEXT: INSTRUCTIONS →
+                    </button>
+                </div>
+            </div>
+
+            <!-- ==================== PAGE 3: INSTRUCTIONS & POWER-UPS ==================== -->
+            <div id="menu-page-3" class="hidden space-y-5">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h2 class="font-racing text-lg sm:text-xl font-bold text-[#00F5E1] uppercase">Step 3: Race Controls & LNG Power-Ups</h2>
+                            <span id="controls-mode-badge" class="px-2.5 py-0.5 rounded-full text-[10px] font-racing font-bold uppercase bg-[#00A19C]/25 border border-[#00F5E1] text-[#00F5E1]">
+                                👤 1 PLAYER MODE
+                            </span>
+                        </div>
+                        <p id="controls-mode-subtitle" class="text-xs text-slate-400 mt-0.5">
+                            Showing controls for Single Player mode. You can drive using either WASD or Arrow Keys!
+                        </p>
+                    </div>
+
+                    <!-- Quick Mode Switcher / Preview on Controls Page -->
+                    <div class="flex items-center gap-1.5 bg-slate-900 p-1 rounded-xl border border-slate-800 self-start sm:self-auto">
+                        <button id="btn-ctrl-mode-1p" class="px-3 py-1.5 rounded-lg font-racing text-[10px] font-bold uppercase bg-[#00A19C] text-white border border-[#00F5E1] cursor-pointer transition">
+                            👤 1P Controls
+                        </button>
+                        <button id="btn-ctrl-mode-2p" class="px-3 py-1.5 rounded-lg font-racing text-[10px] font-bold uppercase bg-transparent text-slate-400 border border-transparent hover:text-white cursor-pointer transition">
+                            👥 2P Controls
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 1-PLAYER CONTROLS LAYOUT (Shown when numPlayers === 1) -->
+                <div id="controls-layout-1p" class="grid grid-cols-1 lg:grid-cols-2 gap-4 text-xs">
+                    <!-- Single Player Full Controls Card -->
+                    <div class="bg-slate-900/90 p-5 rounded-xl border border-[#00A19C]/70 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
+                                <h3 class="text-[#00F5E1] font-racing font-bold uppercase tracking-wider text-sm">👤 SINGLE PLAYER CONTROLS</h3>
+                                <span class="px-2.5 py-0.5 rounded bg-[#00A19C]/20 text-[#00F5E1] font-bold text-[10px]">FULL SCREEN • VS 3 AI</span>
+                            </div>
+                            <div class="space-y-3 text-slate-300">
+                                <div class="flex justify-between items-center">
+                                    <span>Steer & Accelerate:</span>
+                                    <div class="flex gap-1.5">
+                                        <kbd class="px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-white font-bold">W, A, S, D</kbd>
+                                        <span class="text-slate-500">or</span>
+                                        <kbd class="px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-white font-bold">ARROW KEYS</kbd>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span>Brake / Smooth Reverse:</span>
+                                    <b class="text-white">Hold S or ▼ DOWN</b>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span>Hop & Drift Boost:</span>
+                                    <kbd class="px-2.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-[#00F5E1] font-bold">Hold SPACEBAR</kbd>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span>Camera / Reset Kart:</span>
+                                    <b class="text-white">C (Camera) • R (Reset)</b>
+                                </div>
+                                <div class="flex justify-between items-center pt-2.5 border-t border-slate-800">
+                                    <span class="text-[#00F5E1] font-bold text-sm">🚀 Fire LNG Power-Up:</span>
+                                    <kbd class="px-3 py-1 rounded-lg bg-[#00A19C] text-slate-950 font-black text-xs shadow">E, Q, SHIFT or ENTER</kbd>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4 pt-3 border-t border-slate-800/80 text-[11px] text-slate-400">
+                            💡 <b class="text-slate-200">Pro Tip:</b> Press your Power-Up key while the item box is spinning to lock it in immediately, then press again to fire!
+                        </div>
+                    </div>
+
+                    <!-- LNG Power-Ups Card (1P View) -->
+                    <div class="bg-slate-900/90 p-5 rounded-xl border border-slate-800 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
+                                <h3 class="text-slate-200 font-racing font-bold uppercase tracking-wider text-sm">❄️ LNG POWER-UP CRATES (🎁)</h3>
+                                <span class="text-[10px] text-[#00F5E1] font-bold">5 OFFSHORE & LNG ITEMS</span>
+                            </div>
+                            <div class="space-y-2.5 text-slate-300">
+                                <div class="flex items-center gap-2.5"><span class="text-base">🔥</span> <div><b class="text-white">Clean Gas Boost:</b> High-pressure LNG turbo surge</div></div>
+                                <div class="flex items-center gap-2.5"><span class="text-base">🚀</span> <div><b class="text-white">Cryo Rocket:</b> Locks onto the rival kart ahead of you</div></div>
+                                <div class="flex items-center gap-2.5"><span class="text-base">❄️</span> <div><b class="text-white">Cryo Frost (-162°C):</b> Drops an icy patch that spins rivals</div></div>
+                                <div class="flex items-center gap-2.5"><span class="text-base">📡</span> <div><b class="text-white">Sonar Pulse:</b> Acoustic wave slows all other drivers</div></div>
+                                <div class="flex items-center gap-2.5"><span class="text-base">🛡️</span> <div><b class="text-white">Tank Dome Shield:</b> Full invincibility against hazards</div></div>
+                            </div>
+                        </div>
+                        <div class="mt-4 pt-3 border-t border-slate-800/80 text-[11px] text-slate-400">
+                            📱 <b class="text-slate-200">Touch / Mouse Support:</b> You can also click the top <b class="text-[#00F5E1]">P1 ITEM BOX</b> or use on-screen pedals.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2-PLAYER SPLIT-SCREEN CONTROLS LAYOUT (Shown when numPlayers === 2) -->
+                <div id="controls-layout-2p" class="hidden grid-cols-1 lg:grid-cols-3 gap-4 text-xs">
+                    <!-- Player 1 (Left Split-Screen) Card -->
+                    <div class="bg-slate-900/90 p-5 rounded-xl border-2 border-[#00A19C]">
+                        <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
+                            <div>
+                                <h3 class="text-[#00F5E1] font-racing font-bold uppercase tracking-wider text-sm">👤 PLAYER 1</h3>
+                                <span id="ctrl-p1-name-tag" class="text-[10px] text-slate-400">Left Side of Keyboard</span>
+                            </div>
+                            <span class="px-2 py-0.5 rounded bg-[#00A19C]/20 text-[#00F5E1] font-bold text-[10px]">LEFT SCREEN</span>
+                        </div>
+                        <div class="space-y-2.5 text-slate-300">
+                            <div class="flex justify-between items-center">
+                                <span>Accelerate / Steer:</span>
+                                <kbd class="px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-white font-bold">W, A, S, D</kbd>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span>Brake / Reverse:</span>
+                                <b class="text-white">Hold S</b>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span>Hop & Drift Boost:</span>
+                                <kbd class="px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-[#00F5E1] font-bold">SPACEBAR</kbd>
+                            </div>
+                            <div class="flex justify-between items-center pt-2.5 border-t border-slate-800">
+                                <span class="text-[#00F5E1] font-bold">🚀 P1 Use Item:</span>
+                                <kbd class="px-2.5 py-1 rounded bg-[#00A19C] text-slate-950 font-black">E, Q or L-SHIFT</kbd>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Player 2 (Right Split-Screen) Card -->
+                    <div class="bg-slate-900/90 p-5 rounded-xl border-2 border-amber-400">
+                        <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
+                            <div>
+                                <h3 class="text-amber-400 font-racing font-bold uppercase tracking-wider text-sm">👥 PLAYER 2</h3>
+                                <span id="ctrl-p2-name-tag" class="text-[10px] text-slate-400">Right Side of Keyboard</span>
+                            </div>
+                            <span class="px-2 py-0.5 rounded bg-amber-400/20 text-amber-300 font-bold text-[10px]">RIGHT SCREEN</span>
+                        </div>
+                        <div class="space-y-2.5 text-slate-300">
+                            <div class="flex justify-between items-center">
+                                <span>Accelerate / Steer:</span>
+                                <kbd class="px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-white font-bold">▲ ▼ ◀ ▶ ARROWS</kbd>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span>Brake / Reverse:</span>
+                                <b class="text-white">Hold ▼ DOWN</b>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span>Hop & Drift Boost:</span>
+                                <kbd class="px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-amber-300 font-bold">RIGHT SHIFT</kbd>
+                            </div>
+                            <div class="flex justify-between items-center pt-2.5 border-t border-slate-800">
+                                <span class="text-amber-300 font-bold">🚀 P2 Use Item:</span>
+                                <kbd class="px-2.5 py-1 rounded bg-amber-400 text-slate-950 font-black">ENTER or /</kbd>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- LNG Power-Ups Card (2P View) -->
+                    <div class="bg-slate-900/90 p-5 rounded-xl border border-slate-800">
+                        <h3 class="text-slate-200 font-racing font-bold uppercase mb-3 pb-2 border-b border-slate-800 tracking-wider text-sm">❄️ LNG POWER-UPS (🎁)</h3>
+                        <div class="space-y-2 text-slate-300">
+                            <div>🔥 <b class="text-white">Clean Gas Boost:</b> Instant high-speed surge</div>
+                            <div>🚀 <b class="text-white">Cryo Rocket:</b> Homes in on rival ahead</div>
+                            <div>❄️ <b class="text-white">Cryo Frost (-162°C):</b> Spins out tailgaters</div>
+                            <div>📡 <b class="text-white">Sonar Pulse:</b> Slows all other drivers</div>
+                            <div>🛡️ <b class="text-white">Tank Dome Shield:</b> Blocks all hazards</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-between items-center pt-3 border-t border-slate-800">
+                    <button id="btn-back-to-2" class="glass-panel font-racing px-5 py-3 rounded-xl text-xs font-bold text-slate-300 hover:text-white uppercase cursor-pointer">
+                        ← BACK
+                    </button>
+                    <button id="btn-next-to-4" class="btn-arcade font-racing px-7 py-3 rounded-xl font-bold text-sm tracking-wider uppercase cursor-pointer">
+                        NEXT: READY TO RACE →
+                    </button>
+                </div>
+            </div>
+
+            <!-- ==================== PAGE 4: FINAL LAUNCH / START SCREEN ==================== -->
+            <div id="menu-page-4" class="hidden space-y-6 py-2">
+                <div class="text-center max-w-xl mx-auto">
+                    <div class="inline-block px-3.5 py-1 rounded-full bg-[#00A19C]/20 border border-[#00F5E1]/50 text-[#00F5E1] text-xs font-bold uppercase mb-2">
+                        Step 4 • Starting Grid Ready
+                    </div>
+                    <h2 class="font-racing text-2xl sm:text-4xl font-black text-white uppercase">
+                        READY FOR THE 5-LAP GP!
+                    </h2>
+                    <p class="text-xs sm:text-sm text-slate-300 mt-1">
+                        Race from the Offshore Gas Platform across the Subsea Pipeline to the Onshore LNG Terminal.
+                    </p>
+                </div>
+
+                <!-- Summary Card of Chosen Settings -->
+                <div id="race-summary-card" class="bg-slate-900/90 rounded-2xl p-5 border border-[#00A19C]/60 max-w-2xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+                    <div class="p-3 rounded-xl bg-slate-950/80 border border-slate-800">
+                        <span class="text-[10px] uppercase tracking-widest text-slate-400 block">RACE MODE</span>
+                        <span id="summary-mode" class="font-racing font-bold text-base text-[#00F5E1] mt-1 block">1 Player</span>
+                    </div>
+                    <div class="p-3 rounded-xl bg-slate-950/80 border border-slate-800">
+                        <span class="text-[10px] uppercase tracking-widest text-slate-400 block">PLAYER 1</span>
+                        <span id="summary-p1" class="font-racing font-bold text-sm text-white mt-1 block">FLNG_Racer1</span>
+                        <span id="summary-p1-kart" class="text-[11px] text-[#00F5E1] block">FLNG Captain</span>
+                    </div>
+                    <div class="p-3 rounded-xl bg-slate-950/80 border border-slate-800">
+                        <span class="text-[10px] uppercase tracking-widest text-slate-400 block">PLAYER 2 / RIVALS</span>
+                        <span id="summary-p2" class="font-racing font-bold text-sm text-amber-300 mt-1 block">3 AI Drivers</span>
+                        <span id="summary-p2-kart" class="text-[11px] text-slate-400 block">5 Laps • Full Grid</span>
+                    </div>
+                </div>
+
+                <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-800">
+                    <button id="btn-back-to-3" class="glass-panel font-racing w-full sm:w-auto px-5 py-3.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white uppercase cursor-pointer">
+                        ← BACK TO INSTRUCTIONS
+                    </button>
+                    <button id="btn-spud-race" class="btn-arcade font-racing w-full sm:w-auto px-10 py-4 rounded-xl font-black text-lg tracking-wider uppercase cursor-pointer shadow-[0_0_25px_rgba(0,245,225,0.4)]">
+                        🏁 START 5-LAP RACE!
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ==================== IN-GAME HUD ==================== -->
+    <div id="hud-overlay" class="fixed inset-0 z-20 pointer-events-none hidden flex-col justify-between p-3 sm:p-5">
+        <!-- Split-Screen Center Divider Line (Only visible in 2P mode) -->
+        <div id="split-divider" class="hidden fixed top-0 bottom-0 left-1/2 w-[3px] -translate-x-1/2 bg-gradient-to-b from-[#00F5E1] via-[#00A19C] to-[#00F5E1] z-10 shadow-[0_0_12px_#00F5E1]"></div>
+        
+        <!-- Top Row: Position/Lap, Item Roulette, Mini-Map -->
+        <div class="flex items-start justify-between gap-2 w-full z-20">
+            
+            <!-- Left: Player 1 Telemetry -->
+            <div class="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
+                <div class="glass-panel rounded-xl px-4 py-2 border-l-4 border-[#00F5E1] flex items-center gap-3">
+                    <div>
+                        <div class="text-[10px] uppercase tracking-widest text-[#00F5E1] font-bold">P1 PLACE</div>
+                        <div id="hud-pos" class="font-racing text-3xl sm:text-4xl font-black text-[#00F5E1] leading-none">1<span class="text-lg">st</span></div>
+                    </div>
+                    <div class="h-8 w-[1px] bg-slate-700"></div>
+                    <div>
+                        <div class="text-[10px] uppercase tracking-widest text-slate-400">LAP</div>
+                        <div id="hud-lap" class="font-racing text-xl sm:text-2xl font-bold text-white leading-none">1 / 5</div>
+                    </div>
+                    <div class="h-8 w-[1px] bg-slate-700 hidden sm:block"></div>
+                    <div class="hidden sm:block">
+                        <div class="text-[10px] uppercase tracking-widest text-slate-400">TIME</div>
+                        <div id="hud-time" class="font-racing text-base font-bold text-[#00F5E1] leading-none">00:00.0</div>
+                    </div>
+                </div>
+
+                <!-- Sound Toggle & Camera -->
+                <div class="pointer-events-auto flex gap-1.5">
+                    <button id="btn-mute" title="Toggle Audio" class="glass-panel px-3 py-2 rounded-lg text-xs font-bold text-[#00F5E1] hover:border-[#00F5E1] transition cursor-pointer">
+                        🔊 SOUND ON
+                    </button>
+                    <button id="btn-cam" title="Switch Camera (C)" class="glass-panel px-3 py-2 rounded-lg text-xs font-bold text-[#D4DBE2] hover:border-[#00F5E1] transition cursor-pointer">
+                        🎥 CAMERA
+                    </button>
+                </div>
+            </div>
+
+            <!-- Center: Item Boxes (P1 + P2) & Status Message -->
+            <div class="flex flex-col items-center">
+                <div class="flex items-center gap-3 pointer-events-auto">
+                    <div id="item-box-ui" title="Click or press E to use P1 Item" class="glass-panel w-24 h-24 sm:w-28 sm:h-28 rounded-2xl border-2 border-[#00A19C] flex flex-col items-center justify-center relative overflow-hidden shadow-lg cursor-pointer hover:border-[#00F5E1] transition">
+                        <div class="hazard-border absolute top-0 left-0 right-0 h-1.5"></div>
+                        <span class="text-[9px] font-bold text-[#00F5E1] uppercase tracking-wider">P1 ITEM [KEY: E]</span>
+                        <div id="item-icon" class="text-2xl sm:text-3xl leading-none select-none my-1">🎁</div>
+                        <div id="item-name" class="text-[9px] sm:text-[10px] font-bold uppercase tracking-tighter text-white text-center px-1">DRIVE THRU 🎁</div>
+                        <div id="p1-item-hint" class="text-[8px] font-bold text-slate-400 uppercase mt-0.5">PRESS E / SPACE</div>
+                    </div>
+
+                    <!-- Player 2 Item Box (Shown in 2P Mode) -->
+                    <div id="p2-item-box-ui" title="Click or press ENTER to use P2 Item" class="hidden glass-panel w-24 h-24 sm:w-28 sm:h-28 rounded-2xl border-2 border-amber-400 flex-col items-center justify-center relative overflow-hidden shadow-lg cursor-pointer hover:border-amber-200 transition">
+                        <div class="bg-amber-400 absolute top-0 left-0 right-0 h-1.5"></div>
+                        <span class="text-[9px] font-bold text-amber-300 uppercase tracking-wider">P2 ITEM [ENTER]</span>
+                        <div id="p2-item-icon" class="text-2xl sm:text-3xl leading-none select-none my-1">🎁</div>
+                        <div id="p2-item-name" class="text-[9px] sm:text-[10px] font-bold uppercase tracking-tighter text-white text-center px-1">DRIVE THRU 🎁</div>
+                        <div id="p2-item-hint" class="text-[8px] font-bold text-amber-300/80 uppercase mt-0.5">PRESS ENTER or /</div>
+                    </div>
+                </div>
+                <!-- Live Status Banner -->
+                <div id="commentary-box" class="mt-2 px-4 py-1 rounded-full bg-[#101820]/95 border border-slate-700 text-slate-200 text-xs sm:text-sm tracking-wide shadow-md transition-all duration-300 text-center">
+                    Get ready at the offshore gas rig!
+                </div>
+            </div>
+
+            <!-- Right: Player 2 Telemetry (in 2P mode) + 2D Track Mini-Map -->
+            <div class="flex items-start gap-2">
+                <div id="p2-hud-panel" class="hidden glass-panel rounded-xl px-4 py-2 border-r-4 border-amber-400 items-center gap-3">
+                    <div>
+                        <div class="text-[10px] uppercase tracking-widest text-amber-400 font-bold">P2 PLACE</div>
+                        <div id="p2-hud-pos" class="font-racing text-3xl sm:text-4xl font-black text-amber-400 leading-none">2<span class="text-lg">nd</span></div>
+                    </div>
+                    <div class="h-8 w-[1px] bg-slate-700"></div>
+                    <div>
+                        <div class="text-[10px] uppercase tracking-widest text-slate-400">LAP</div>
+                        <div id="p2-hud-lap" class="font-racing text-xl sm:text-2xl font-bold text-white leading-none">1 / 5</div>
+                    </div>
+                    <div class="h-8 w-[1px] bg-slate-700 hidden md:block"></div>
+                    <div class="hidden md:block">
+                        <div class="text-[10px] uppercase tracking-widest text-slate-400">SPEED</div>
+                        <div class="font-racing text-base font-bold text-amber-300 leading-none"><span id="p2-hud-speed">0</span> KM/H</div>
+                    </div>
+                </div>
+
+                <div class="glass-panel rounded-xl p-2 flex flex-col items-center">
+                    <span class="text-[9px] font-racing uppercase tracking-widest text-slate-300 mb-1">LNG CIRCUIT</span>
+                    <canvas id="minimap-canvas" width="120" height="120" class="w-24 h-24 sm:w-28 sm:h-28 rounded-lg bg-[#101820]/90 border border-slate-700"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Center Countdown Display -->
+        <div id="countdown-display" class="self-center my-auto font-racing text-6xl sm:text-8xl font-black text-[#00F5E1] drop-shadow-[0_6px_25px_rgba(0,161,156,0.95)] hidden">
+            3
+        </div>
+
+        <!-- Bottom Row: Touch Controls + Speedometer -->
+        <div class="flex items-end justify-between w-full gap-2">
+            
+            <!-- Left Touch Steering + Item Button -->
+            <div class="pointer-events-auto flex flex-col gap-2">
+                <button id="touch-item" class="touch-btn px-4 py-2.5 rounded-xl font-racing text-xs font-bold text-[#00F5E1] uppercase shadow-lg">
+                    🚀 P1 USE ITEM (E / Q)
+                </button>
+                <div class="flex gap-2">
+                    <button id="touch-left" class="touch-btn w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center text-2xl font-bold text-[#D4DBE2]">
+                        ◀
+                    </button>
+                    <button id="touch-right" class="touch-btn w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center text-2xl font-bold text-[#D4DBE2]">
+                        ▶
+                    </button>
+                </div>
+            </div>
+
+            <!-- Center-Right Speedometer & Drift Boost Bar -->
+            <div class="glass-panel rounded-2xl px-4 py-2.5 border-b-4 border-[#00A19C] flex items-center gap-4">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] text-slate-400 uppercase tracking-widest">P1 SPEED</span>
+                        <span id="reverse-badge" class="hidden px-1.5 py-0.5 rounded bg-rose-500/20 border border-rose-400 text-[9px] font-bold text-rose-300">REV</span>
+                    </div>
+                    <div class="flex items-baseline gap-1.5">
+                        <span id="hud-speed" class="font-racing text-2xl sm:text-4xl font-black text-white">0</span>
+                        <span class="text-xs font-bold text-[#00F5E1]">KM/H</span>
+                    </div>
+                    <div id="hud-knots" class="text-[10px] text-slate-400 font-semibold">Offshore Gas Platform</div>
+                </div>
+                <div class="w-24 sm:w-36">
+                    <div class="flex justify-between text-[10px] uppercase font-bold mb-1">
+                        <span id="drift-label" class="text-slate-300">DRIFT BOOST</span>
+                        <span id="sector-label" class="text-[#00F5E1]">GAS RIG</span>
+                    </div>
+                    <div class="w-full h-3 bg-slate-900 rounded-full overflow-hidden border border-[#00A19C]/60">
+                        <div id="drift-bar" class="h-full w-0 bg-gradient-to-r from-[#D4DBE2] via-[#00A19C] to-[#00F5E1] transition-all duration-75"></div>
+                    </div>
+                    <div class="w-full h-2 bg-slate-900 rounded-full overflow-hidden border border-slate-700 mt-1.5">
+                        <div id="speed-bar" class="h-full w-0 bg-gradient-to-r from-[#00A19C] to-[#00F5E1] transition-all duration-75"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Touch Pedals (Gas, Brake, Drift) -->
+            <div class="pointer-events-auto flex gap-2 items-end">
+                <button id="touch-drift" class="touch-btn w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex flex-col items-center justify-center text-xs font-bold text-[#00F5E1]">
+                    <span>⚡</span>
+                    <span>DRIFT</span>
+                </button>
+                <button id="touch-brake" class="touch-btn w-12 h-14 sm:w-14 sm:h-16 rounded-2xl flex flex-col items-center justify-center text-xs font-bold text-rose-400">
+                    <span>🛑</span>
+                    <span>BACK</span>
+                </button>
+                <button id="touch-gas" class="touch-btn w-16 h-20 sm:w-20 sm:h-24 rounded-2xl flex flex-col items-center justify-center text-sm font-black text-[#00F5E1] border-[#00F5E1]">
+                    <span class="text-xl">🏎️</span>
+                    <span>GO</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== FINISH / PODIUM SCREEN ==================== -->
+    <div id="results-screen" class="fixed inset-0 z-30 hidden items-center justify-center p-4 bg-[#101820]/90 backdrop-blur-md">
+        <div class="glass-panel rounded-2xl max-w-2xl w-full p-6 sm:p-8 border border-[#00A19C] text-center">
+            <div class="hazard-border h-1.5 w-full rounded-full mb-5"></div>
+            <div class="inline-block px-3 py-1 rounded-full bg-[#00A19C]/20 text-[#00F5E1] text-xs font-bold uppercase mb-2">
+                Race Complete • 5 Laps
+            </div>
+            <h2 id="results-title" class="font-racing text-3xl sm:text-4xl font-black text-white mb-2">
+                RACE FINISHED!
+            </h2>
+            <p id="results-subtitle" class="text-slate-300 text-sm mb-6">
+                Clean energy delivered across the offshore gas rig and LNG terminal!
+            </p>
+
+            <!-- Standings Table -->
+            <div id="standings-list" class="space-y-2.5 mb-6 text-left">
+                <!-- Populated by JS -->
+            </div>
+
+            <!-- 5-Lap Splits -->
+            <div class="bg-slate-900/90 rounded-xl p-3 border border-slate-800 mb-6 grid grid-cols-3 sm:grid-cols-6 gap-2 text-xs">
+                <div>
+                    <span class="text-slate-400 block">LAP 1</span>
+                    <span id="res-lap1" class="font-racing font-bold text-white">--:--</span>
+                </div>
+                <div>
+                    <span class="text-slate-400 block">LAP 2</span>
+                    <span id="res-lap2" class="font-racing font-bold text-white">--:--</span>
+                </div>
+                <div>
+                    <span class="text-slate-400 block">LAP 3</span>
+                    <span id="res-lap3" class="font-racing font-bold text-white">--:--</span>
+                </div>
+                <div>
+                    <span class="text-slate-400 block">LAP 4</span>
+                    <span id="res-lap4" class="font-racing font-bold text-white">--:--</span>
+                </div>
+                <div>
+                    <span class="text-slate-400 block">LAP 5</span>
+                    <span id="res-lap5" class="font-racing font-bold text-white">--:--</span>
+                </div>
+                <div>
+                    <span class="text-slate-400 block">TOTAL</span>
+                    <span id="res-total" class="font-racing font-bold text-[#00F5E1]">--:--</span>
+                </div>
+            </div>
+
+            <!-- Overall Score & Global Leaderboard Panel -->
+            <div class="bg-slate-900/95 rounded-xl p-4 border border-[#00A19C]/60 mb-6 text-left">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 mb-3 border-b border-slate-800">
+                    <div>
+                        <span class="text-[10px] font-bold uppercase tracking-widest text-[#00F5E1] block">CHAMPIONSHIP SCORE EARNED</span>
+                        <div id="res-earned-score" class="font-racing text-xl sm:text-2xl font-black text-white">0 PTS</div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <input id="post-username-input" type="text" maxlength="16" placeholder="Update Username"
+                            class="px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-white text-xs font-bold focus:outline-none focus:border-[#00F5E1]" />
+                        <button id="btn-save-score" class="px-3.5 py-1.5 rounded-lg bg-[#00A19C] hover:bg-[#00F5E1] hover:text-slate-950 text-white font-racing text-xs font-bold uppercase transition cursor-pointer">
+                            💾 SAVE SCORE
+                        </button>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-racing font-bold uppercase text-amber-300">🏆 TOP OVERALL LEADERBOARD</span>
+                    <span id="save-score-status" class="text-[11px] font-semibold text-[#00F5E1]">Score registered!</span>
+                </div>
+                <div id="results-leaderboard-list" class="space-y-1.5 max-h-36 overflow-y-auto pr-1 text-xs">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                <button id="btn-restart-race" class="btn-arcade font-racing px-6 py-3.5 rounded-xl font-bold uppercase tracking-wider cursor-pointer">
+                    🔄 PLAY AGAIN
+                </button>
+                <button id="btn-change-kart" class="glass-panel font-racing px-6 py-3.5 rounded-xl text-[#00F5E1] font-bold uppercase tracking-wider hover:bg-slate-800 cursor-pointer">
+                    👤 CHANGE DRIVER
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /********************************************************************
+         * 1. PETRONAS LNG DRIVERS, ROLE AVATARS & POWER-UP ITEMS
+         ********************************************************************/
+        const TOTAL_LAPS = 5;
+
+        const KART_ROSTER = [
+            {
+                id: 'w15_wildcat',
+                name: 'FLNG Captain',
+                kartName: 'PFLNG Silver Arrow',
+                subtitle: 'All-Rounder',
+                color: 0xD4DBE2,       // Metallic Silver Arrow Body
+                accent: 0x00A19C,      // PETRONAS Emerald Green Wings
+                trim: 0x00F5E1,        // Neon Cyan Highlights
+                hex: '#00A19C',
+                desc: 'Commands the Floating LNG facility. Balanced top speed and smooth cornering.',
+                avatarSvg: `<svg viewBox="0 0 64 64" class="w-14 h-14"><circle cx="32" cy="32" r="30" fill="#101820" stroke="#00A19C" stroke-width="2"/><path d="M16 56 C16 44 48 44 48 56" fill="#00A19C"/><circle cx="32" cy="28" r="11" fill="#f1f5f9"/><path d="M19 25 C19 15 45 15 45 25 Z" fill="#00F5E1"/><rect x="17" y="24" width="30" height="3.5" rx="1.5" fill="#00A19C"/><rect x="24" y="29" width="16" height="4" rx="2" fill="#101820"/></svg>`,
+                stats: { speed: 90, accel: 90, handling: 92 },
+                maxSpeed: 109,
+                accelRate: 66,
+                turnSpeed: 2.55
+            },
+            {
+                id: 'primax_aero',
+                name: 'Subsea Gas Diver',
+                kartName: 'Pipeline Emerald Jet',
+                subtitle: 'Top Speed',
+                color: 0x00A19C,       // Full PETRONAS Emerald Green Chassis
+                accent: 0x101820,      // Carbon Fiber Aero Wings
+                trim: 0x00F5E1,        // Neon Cyan Thrusters
+                hex: '#00F5E1',
+                desc: 'Inspects deepwater gas pipelines. Built for the highest straight-line speed.',
+                avatarSvg: `<svg viewBox="0 0 64 64" class="w-14 h-14"><circle cx="32" cy="32" r="30" fill="#101820" stroke="#00F5E1" stroke-width="2"/><path d="M16 56 C16 44 48 44 48 56" fill="#0f172a"/><circle cx="32" cy="27" r="13" fill="#00A19C"/><rect x="21" y="21" width="22" height="11" rx="5.5" fill="#00F5E1" stroke="#101820" stroke-width="2"/><circle cx="32" cy="35" r="3" fill="#101820"/></svg>`,
+                stats: { speed: 98, accel: 84, handling: 88 },
+                maxSpeed: 114,
+                accelRate: 62,
+                turnSpeed: 2.40
+            },
+            {
+                id: 'seismic_arrow',
+                name: 'Gas Explorer',
+                kartName: 'Seismic Silver F1',
+                subtitle: 'Best Handling',
+                color: 0xC0C0C0,       // Chrome Silver Chassis
+                accent: 0x00F5E1,      // Cyan Wing
+                trim: 0x00A19C,        // Emerald Sidepods
+                hex: '#D4DBE2',
+                desc: 'Discovers offshore natural gas fields. Super responsive turning on tight corners.',
+                avatarSvg: `<svg viewBox="0 0 64 64" class="w-14 h-14"><circle cx="32" cy="32" r="30" fill="#101820" stroke="#D4DBE2" stroke-width="2"/><path d="M16 56 C16 44 48 44 48 56" fill="#334155"/><path d="M19 27 A13 13 0 0 1 45 27" fill="none" stroke="#00F5E1" stroke-width="3.5"/><circle cx="32" cy="28" r="10.5" fill="#f1f5f9"/><rect x="17" y="24" width="4" height="9" rx="2" fill="#00A19C"/><rect x="43" y="24" width="4" height="9" rx="2" fill="#00A19C"/><rect x="23" y="26" width="18" height="5" rx="2.5" fill="#00A19C"/></svg>`,
+                stats: { speed: 87, accel: 91, handling: 99 },
+                maxSpeed: 106,
+                accelRate: 66,
+                turnSpeed: 2.82
+            },
+            {
+                id: 'flng_apex',
+                name: 'Cryo LNG Engineer',
+                kartName: 'Coolant Carbon F1',
+                subtitle: 'Fast Boost',
+                color: 0x101820,       // Matte Carbon Fiber Black
+                accent: 0x00A19C,      // Glowing PETRONAS Emerald Louvers
+                trim: 0xD4DBE2,        // Silver Twin LNG Tanks
+                hex: '#38bdf8',
+                desc: 'Cools natural gas to -162°C liquid fuel. Blasts off with rapid acceleration.',
+                avatarSvg: `<svg viewBox="0 0 64 64" class="w-14 h-14"><circle cx="32" cy="32" r="30" fill="#101820" stroke="#38bdf8" stroke-width="2"/><path d="M16 56 C16 44 48 44 48 56" fill="#00A19C"/><circle cx="32" cy="27" r="13" fill="#1e293b" stroke="#00A19C" stroke-width="1.5"/><path d="M21 24 L43 24 L40 31 L24 31 Z" fill="#00F5E1"/><path d="M26 16 L38 16" stroke="#D4DBE2" stroke-width="2.5" stroke-linecap="round"/></svg>`,
+                stats: { speed: 88, accel: 98, handling: 90 },
+                maxSpeed: 107,
+                accelRate: 74,
+                turnSpeed: 2.50
+            }
+        ];
+
+        const UPSTREAM_ITEMS = [
+            {
+                id: 'condensate',
+                name: 'CLEAN GAS BOOST',
+                icon: '🔥',
+                comment: '🔥 CLEAN GAS BOOST! FULL SPEED AHEAD!'
+            },
+            {
+                id: 'drillbit',
+                name: 'CRYO ROCKET',
+                icon: '🚀',
+                comment: '🚀 LAUNCHED HOMING CRYO ROCKET!'
+            },
+            {
+                id: 'crude',
+                name: 'CRYO FROST PATCH',
+                icon: '❄️',
+                comment: '❄️ DROPPED A -162°C CRYO FROST PATCH!'
+            },
+            {
+                id: 'seismic',
+                name: 'SONAR PULSE',
+                icon: '📡',
+                comment: '📡 SONAR PULSE! RIVALS SLOWED DOWN!'
+            },
+            {
+                id: 'bop',
+                name: 'TANK DOME SHIELD',
+                icon: '🛡️',
+                comment: '🛡️ LNG TANK DOME SHIELD! INVINCIBLE!'
+            }
+        ];
+
+        /********************************************************************
+         * 2. MARIO KART INSPIRED ARCADE SYNTHESIZER & BGM SEQUENCER
+         ********************************************************************/
+        class RigSoundEngine {
+            constructor() {
+                this.ctx = null;
+                this.muted = false;
+                this.engineOsc = null;
+                this.turboOsc = null;
+                this.engineGain = null;
+                this.bgmInterval = null;
+                this.bgmStep = 0;
+                this.isFinalLap = false;
+                this.isShieldMusic = false;
+            }
+
+            init() {
+                if (this.ctx) {
+                    if (this.ctx.state === 'suspended') this.ctx.resume();
+                    return;
+                }
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtx) return;
+                this.ctx = new AudioCtx();
+
+                // Arcade Kart Engine + Turbo Harmonic
+                this.engineOsc = this.ctx.createOscillator();
+                this.turboOsc = this.ctx.createOscillator();
+                this.engineGain = this.ctx.createGain();
+
+                this.engineOsc.type = 'sawtooth';
+                this.engineOsc.frequency.value = 75;
+
+                this.turboOsc.type = 'square';
+                this.turboOsc.frequency.value = 150;
+
+                this.engineGain.gain.value = 0.0;
+
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.value = 650;
+
+                this.engineOsc.connect(filter);
+                this.turboOsc.connect(filter);
+                filter.connect(this.engineGain);
+                this.engineGain.connect(this.ctx.destination);
+
+                this.engineOsc.start();
+                this.turboOsc.start();
+            }
+
+            // Play a single synthesized musical note
+            playNote(freq, startTime, duration, type = 'square', vol = 0.08, slideTo = null) {
+                if (!this.ctx || this.muted || freq <= 0) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, startTime);
+                if (slideTo) {
+                    osc.frequency.exponentialRampToValueAtTime(slideTo, startTime + duration);
+                }
+                gain.gain.setValueAtTime(vol, startTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration * 0.95);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(startTime);
+                osc.stop(startTime + duration);
+            }
+
+            // Upbeat Mario Kart Circuit Style Chiptune BGM Loop
+            startBGM() {
+                this.init();
+                this.stopBGM();
+                this.bgmStep = 0;
+
+                // Cheerful syncopated Mario Kart circuit lead melody (in Hz)
+                const circuitLead = [
+                    523.25, 0, 659.25, 783.99, 1046.50, 0, 783.99, 659.25,
+                    587.33, 659.25, 698.46, 783.99, 659.25, 0, 523.25, 0,
+                    587.33, 0, 698.46, 880.00, 1174.66, 0, 987.77, 783.99,
+                    880.00, 783.99, 698.46, 659.25, 587.33, 659.25, 783.99, 0
+                ];
+                // Bouncy octave bassline
+                const circuitBass = [
+                    130.81, 261.63, 130.81, 261.63, 164.81, 329.63, 196.00, 392.00,
+                    146.83, 293.66, 174.61, 349.23, 130.81, 261.63, 196.00, 392.00,
+                    146.83, 293.66, 146.83, 293.66, 174.61, 349.23, 220.00, 440.00,
+                    196.00, 392.00, 174.61, 349.23, 146.83, 293.66, 196.00, 392.00
+                ];
+
+                // Iconic Super-Star / Invincibility fast riff when Energy Shield is active
+                const starLead = [
+                    698.46, 698.46, 698.46, 0, 698.46, 0, 698.46, 659.25,
+                    659.25, 659.25, 0, 659.25, 0, 659.25, 587.33, 659.25
+                ];
+
+                const tick = () => {
+                    if (!this.ctx || this.muted) return;
+                    const now = this.ctx.currentTime;
+                    const pitchMult = this.isFinalLap ? 1.12 : 1.0; // Speed/pitch up on Final Lap!
+                    const stepDur = this.isFinalLap ? 0.115 : 0.135;
+
+                    if (this.isShieldMusic) {
+                        const sIdx = this.bgmStep % starLead.length;
+                        const note = starLead[sIdx];
+                        if (note > 0) {
+                            this.playNote(note * 1.15, now, stepDur * 0.85, 'square', 0.065);
+                            this.playNote(note * 0.575, now, stepDur * 0.85, 'triangle', 0.055);
+                        }
+                    } else {
+                        const idx = this.bgmStep % circuitLead.length;
+                        const leadFreq = circuitLead[idx] * pitchMult;
+                        const bassFreq = circuitBass[idx] * pitchMult;
+
+                        if (leadFreq > 0) {
+                            this.playNote(leadFreq, now, stepDur * 0.9, 'square', 0.055);
+                            // Harmony third
+                            this.playNote(leadFreq * 1.25, now, stepDur * 0.8, 'triangle', 0.03);
+                        }
+                        if (bassFreq > 0) {
+                            this.playNote(bassFreq, now, stepDur * 0.75, 'triangle', 0.065);
+                        }
+                    }
+
+                    this.bgmStep++;
+                };
+
+                this.bgmInterval = setInterval(tick, 135);
+            }
+
+            stopBGM() {
+                if (this.bgmInterval) {
+                    clearInterval(this.bgmInterval);
+                    this.bgmInterval = null;
+                }
+            }
+
+            updateEngine(speedRatio, drifting, boosting, shielded = false) {
+                this.isShieldMusic = shielded;
+                if (!this.ctx || this.muted) {
+                    if (this.engineGain) this.engineGain.gain.value = 0;
+                    return;
+                }
+                if (this.ctx.state === 'suspended') this.ctx.resume();
+                const baseFreq = 65 + speedRatio * 165 + (boosting ? 60 : 0) + (drifting ? 25 : 0);
+                const harmFreq = 130 + speedRatio * 330 + (boosting ? 130 : 0);
+                this.engineOsc.frequency.setTargetAtTime(baseFreq, this.ctx.currentTime, 0.04);
+                this.turboOsc.frequency.setTargetAtTime(harmFreq, this.ctx.currentTime, 0.04);
+                this.engineGain.gain.setTargetAtTime(0.035 + speedRatio * 0.04, this.ctx.currentTime, 0.07);
+            }
+
+            stopEngine() {
+                if (this.engineGain && this.ctx) {
+                    this.engineGain.gain.cancelScheduledValues(this.ctx.currentTime);
+                    this.engineGain.gain.setValueAtTime(0, this.ctx.currentTime);
+                }
+            }
+
+            playTone(freq, endFreq, duration, type = 'triangle', vol = 0.15) {
+                if (!this.ctx || this.muted) return;
+                this.playNote(freq, this.ctx.currentTime, duration, type, vol, Math.max(20, endFreq));
+            }
+
+            // Classic Mario Kart Lakitu Countdown: 3 (440Hz), 2 (440Hz), 1 (440Hz), GO! (880Hz)
+            playCountdown(isGo) {
+                if (!this.ctx || this.muted) return;
+                const now = this.ctx.currentTime;
+                if (isGo) {
+                    this.playNote(880, now, 0.55, 'square', 0.16);
+                    this.playNote(1760, now, 0.55, 'triangle', 0.10);
+                } else {
+                    this.playNote(440, now, 0.24, 'square', 0.13);
+                }
+            }
+
+            // Mario Kart Item Box Rapid Musical Roulette Cycling Arpeggio
+            playRouletteTick() {
+                if (!this.ctx || this.muted) return;
+                const notes = [523.25, 587.33, 659.25, 698.46, 783.99, 880.00, 987.77, 1046.50];
+                const f = notes[Math.floor(Math.random() * notes.length)];
+                this.playNote(f, this.ctx.currentTime, 0.065, 'square', 0.09);
+            }
+
+            // Mario Kart Item Locked Double-Ding Chime
+            playItemLock() {
+                if (!this.ctx || this.muted) return;
+                const now = this.ctx.currentTime;
+                this.playNote(783.99, now, 0.09, 'square', 0.12);
+                this.playNote(1046.50, now + 0.09, 0.26, 'square', 0.14);
+            }
+
+            // Mushroom / Dash Panel Rising Arpeggio Whoosh
+            playBoostRoar() {
+                if (!this.ctx || this.muted) return;
+                const now = this.ctx.currentTime;
+                const arp = [392.00, 523.25, 659.25, 783.99, 1046.50];
+                arp.forEach((f, i) => {
+                    this.playNote(f, now + i * 0.045, 0.12, 'sawtooth', 0.11);
+                });
+            }
+
+            // POW / Lightning / Shockwave Drop Sound
+            playSeismicThump() {
+                if (!this.ctx || this.muted) return;
+                const now = this.ctx.currentTime;
+                this.playNote(987.77, now, 0.12, 'square', 0.15, 220);
+                this.playNote(659.25, now + 0.12, 0.45, 'sawtooth', 0.18, 55);
+            }
+
+            // Classic Banana Peel / Oil Slip Wobble
+            playSpinout() {
+                if (!this.ctx || this.muted) return;
+                const now = this.ctx.currentTime;
+                const notes = [783.99, 698.46, 659.25, 587.33, 523.25, 392.00];
+                notes.forEach((f, i) => {
+                    this.playNote(f, now + i * 0.06, 0.07, 'square', 0.12);
+                });
+            }
+
+            // Mario Kart Lap & Final Lap Fanfare Brass Trumpet Chime
+            playLapChime(isFinal = false) {
+                if (!this.ctx || this.muted) return;
+                const now = this.ctx.currentTime;
+                const mult = isFinal ? 1.15 : 1.0;
+                const fanfare = [
+                    { f: 523.25, t: 0.00, d: 0.10 },
+                    { f: 659.25, t: 0.10, d: 0.10 },
+                    { f: 783.99, t: 0.20, d: 0.10 },
+                    { f: 1046.50, t: 0.30, d: 0.28 }
+                ];
+                fanfare.forEach(n => {
+                    this.playNote(n.f * mult, now + n.t, n.d, 'square', 0.13);
+                });
+            }
+
+            // Podium Finish Victory Fanfare
+            playVictoryFanfare() {
+                if (!this.ctx || this.muted) return;
+                const now = this.ctx.currentTime;
+                const notes = [
+                    { f: 523.25, t: 0.00, d: 0.14 },
+                    { f: 523.25, t: 0.15, d: 0.14 },
+                    { f: 523.25, t: 0.30, d: 0.14 },
+                    { f: 523.25, t: 0.45, d: 0.32 },
+                    { f: 415.30, t: 0.80, d: 0.30 },
+                    { f: 466.16, t: 1.12, d: 0.30 },
+                    { f: 523.25, t: 1.45, d: 0.18 },
+                    { f: 466.16, t: 1.68, d: 0.12 },
+                    { f: 523.25, t: 1.82, d: 0.65 }
+                ];
+                notes.forEach(n => {
+                    this.playNote(n.f, now + n.t, n.d, 'square', 0.13);
+                    this.playNote(n.f * 0.5, now + n.t, n.d, 'triangle', 0.10);
+                });
+            }
+        }
+
+        const sfx = new RigSoundEngine();
+
+        /********************************************************************
+         * 3. TRACK GEOMETRY & CLOSED CATMULL-ROM SPLINE BUILDER
+         ********************************************************************/
+        const TRACK_HALF_WIDTH = 17.5;
+        const TRACK_SAMPLES = 450;
+        let trackCurve = null;
+        let trackPoints = [];
+        let trackTangents = [];
+        let trackNormals = [];
+
+        // Closed circuit control points spanning Offshore Platform, Subsea Pipeline Bridge, and Onshore Seismic Desert/Jungle
+        const CONTROL_POINTS = [
+            new THREE.Vector3(0, 6, -150),      // 0: Offshore Main Drilling Deck (Start/Finish)
+            new THREE.Vector3(95, 6, -150),     // 1: Helipad Turn
+            new THREE.Vector3(165, 4, -90),     // 2: Flare Tower East Deck
+            new THREE.Vector3(195, 1.5, 5),     // 3: Subsea Pipeline Causeway Entry
+            new THREE.Vector3(160, 1.5, 115),   // 4: Deepwater Riser Bend
+            new THREE.Vector3(65, 2.5, 165),    // 5: Landfall Terminal Transition
+            new THREE.Vector3(-45, 5.5, 150),   // 6: Onshore Nodding Donkey Field Entry
+            new THREE.Vector3(-140, 8.5, 175),  // 7: Seismic Desert Ridge
+            new THREE.Vector3(-210, 5.0, 95),   // 8: Jungle Wellhead Hairpin
+            new THREE.Vector3(-190, 2.5, -15),  // 9: Tank Battery Straight
+            new THREE.Vector3(-125, 2.0, -95),  // 10: Subsea Manifold Bridge Return
+            new THREE.Vector3(-65, 6.0, -150)   // 11: Ramp onto Offshore Platform Deck
+        ];
+
+        function initTrackSpline() {
+            trackCurve = new THREE.CatmullRomCurve3(CONTROL_POINTS, true, 'catmullrom', 0.5);
+            trackPoints = [];
+            trackTangents = [];
+            trackNormals = [];
+            const up = new THREE.Vector3(0, 1, 0);
+
+            for (let i = 0; i < TRACK_SAMPLES; i++) {
+                const u = i / TRACK_SAMPLES;
+                const pt = trackCurve.getPointAt(u);
+                const tan = trackCurve.getTangentAt(u).normalize();
+                const right = new THREE.Vector3().crossVectors(tan, up).normalize();
+                trackPoints.push(pt);
+                trackTangents.push(tan);
+                trackNormals.push(right);
+            }
+        }
+
+        // Fast closest-spline-point query for karts & projectiles
+        function getClosestTrackInfo(pos, hintIndex = -1) {
+            let bestIdx = 0;
+            let bestDistSq = Infinity;
+
+            if (hintIndex >= 0) {
+                // Search local window around hint for O(1) speed
+                const windowSize = 35;
+                for (let offset = -windowSize; offset <= windowSize; offset++) {
+                    const idx = (hintIndex + offset + TRACK_SAMPLES) % TRACK_SAMPLES;
+                    const dSq = pos.distanceToSquared(trackPoints[idx]);
+                    if (dSq < bestDistSq) {
+                        bestDistSq = dSq;
+                        bestIdx = idx;
+                    }
+                }
+            } else {
+                for (let i = 0; i < TRACK_SAMPLES; i++) {
+                    const dSq = pos.distanceToSquared(trackPoints[i]);
+                    if (dSq < bestDistSq) {
+                        bestDistSq = dSq;
+                        bestIdx = i;
+                    }
+                }
+            }
+
+            const center = trackPoints[bestIdx];
+            const tangent = trackTangents[bestIdx];
+            const right = trackNormals[bestIdx];
+            const offsetVec = new THREE.Vector3().subVectors(pos, center);
+            const lateralOffset = offsetVec.dot(right);
+            const u = bestIdx / TRACK_SAMPLES;
+
+            return {
+                index: bestIdx,
+                u,
+                center,
+                tangent,
+                right,
+                lateralOffset,
+                distSq: bestDistSq
+            };
+        }
+
+        function getSectorName(u) {
+            if (u < 0.24 || u > 0.90) return { name: 'GAS RIG DECK', zone: 'Offshore Gas Rig' };
+            if (u >= 0.24 && u < 0.46) return { name: 'SUBSEA PIPE', zone: 'Subsea Gas Line' };
+            if (u >= 0.46 && u < 0.78) return { name: 'LNG TERMINAL', zone: 'Onshore LNG Plant' };
+            return { name: 'FLNG JETTY', zone: 'LNG Carrier Dock' };
+        }
+
+        /********************************************************************
+         * 4. THREE.JS SCENE, ENVIRONMENT, FLARE TOWERS & LNG TERMINAL
+         ********************************************************************/
+        let scene, camera, cameraP2, renderer;
+        const animatedProps = {
+            pumpjacks: [],
+            flareParticles: [],
+            drillCones: [],
+            itemCrates: [],
+            boostChevrons: [],
+            waterMesh: null,
+            seismicRing: null
+        };
+
+        function createCheckerTexture() {
+            const c = document.createElement('canvas');
+            c.width = 256;
+            c.height = 64;
+            const ctx = c.getContext('2d');
+            const sq = 16;
+            for (let y = 0; y < 64; y += sq) {
+                for (let x = 0; x < 256; x += sq) {
+                    // PETRONAS Emerald Green & Carbon Black Checkered Flag
+                    ctx.fillStyle = ((x / sq + y / sq) % 2 === 0) ? '#00A19C' : '#101820';
+                    ctx.fillRect(x, y, sq, sq);
+                }
+            }
+            const tex = new THREE.CanvasTexture(c);
+            tex.wrapS = THREE.RepeatWrapping;
+            tex.wrapT = THREE.RepeatWrapping;
+            return tex;
+        }
+
+        function initThreeScene() {
+            const canvas = document.getElementById('game-canvas');
+            renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0c192c);
+            scene.fog = new THREE.FogExp2(0x0c192c, 0.0016);
+
+            camera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerHeight, 0.5, 900);
+            cameraP2 = new THREE.PerspectiveCamera(62, (window.innerWidth * 0.5) / window.innerHeight, 0.5, 900);
+
+            // Lights
+            const hemiLight = new THREE.HemisphereLight(0xffe6b3, 0x0f172a, 0.85);
+            scene.add(hemiLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffedd5, 1.15);
+            dirLight.position.set(120, 190, -80);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 2048;
+            dirLight.shadow.mapSize.height = 2048;
+            dirLight.shadow.camera.near = 20;
+            dirLight.shadow.camera.far = 550;
+            const d = 240;
+            dirLight.shadow.camera.left = -d;
+            dirLight.shadow.camera.right = d;
+            dirLight.shadow.camera.top = d;
+            dirLight.shadow.camera.bottom = -d;
+            scene.add(dirLight);
+
+            initTrackSpline();
+            buildOceanAndOnshoreIsland();
+            buildRoadAndSafetyBarriers();
+            buildOffshorePlatformProps();
+            buildOnshorePumpjackProps();
+            buildBoostZonesAndItemCrates();
+
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function buildOceanAndOnshoreIsland() {
+            // Animated Deepwater Ocean Plane
+            const waterGeo = new THREE.PlaneGeometry(1400, 1400, 48, 48);
+            waterGeo.rotateX(-Math.PI / 2);
+            const waterMat = new THREE.MeshPhongMaterial({
+                color: 0x0284c7,
+                emissive: 0x042f49,
+                specular: 0x7dd3fc,
+                shininess: 75,
+                flatShading: true
+            });
+            const water = new THREE.Mesh(waterGeo, waterMat);
+            water.position.y = -2.2;
+            water.receiveShadow = true;
+            scene.add(water);
+            animatedProps.waterMesh = water;
+
+            // Onshore Desert / Shale Basin Island Terrain (Southwest quadrant)
+            const islandGroup = new THREE.Group();
+            const desertMat = new THREE.MeshLambertMaterial({ color: 0xb45309 });
+            const duneGeo = new THREE.CylinderGeometry(165, 195, 7, 24);
+            const duneMesh = new THREE.Mesh(duneGeo, desertMat);
+            duneMesh.position.set(-125, -2.5, 95);
+            duneMesh.receiveShadow = true;
+            islandGroup.add(duneMesh);
+
+            // Secondary Mesa Hills & Jungle Trees on the onshore basin
+            const mesaPositions = [
+                [-140, 6, 125, 28, 18],
+                [-255, 8, 110, 35, 26],
+                [-85, 5, 215, 32, 22],
+                [-180, 6, 40, 24, 15]
+            ];
+            const mesaMat = new THREE.MeshLambertMaterial({ color: 0x92400e });
+            mesaPositions.forEach(([x, y, z, r, h]) => {
+                const m = new THREE.Mesh(new THREE.ConeGeometry(r, h, 7), mesaMat);
+                m.position.set(x, y, z);
+                m.castShadow = true;
+                islandGroup.add(m);
+            });
+
+            // Jungle Palms / Trees around Onshore Lease
+            const trunkMat = new THREE.MeshLambertMaterial({ color: 0x5c4033 });
+            const leafMat = new THREE.MeshLambertMaterial({ color: 0x15803d });
+            const treeCoords = [
+                [-100, 110], [-160, 140], [-235, 75], [-150, 50],
+                [-75, 185], [-195, 195], [-230, 140], [-115, 75]
+            ];
+            treeCoords.forEach(([tx, tz]) => {
+                const tGroup = new THREE.Group();
+                const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 1.4, 10, 6), trunkMat);
+                trunk.position.y = 5;
+                const crown = new THREE.Mesh(new THREE.ConeGeometry(6, 11, 7), leafMat);
+                crown.position.y = 12;
+                tGroup.add(trunk, crown);
+                tGroup.position.set(tx, 1.0, tz);
+                islandGroup.add(tGroup);
+            });
+
+            scene.add(islandGroup);
+        }
+
+        function buildRoadAndSafetyBarriers() {
+            const roadGeo = new THREE.BufferGeometry();
+            const positions = [];
+            const colors = [];
+            const indices = [];
+
+            const curbLeftGeo = new THREE.BufferGeometry();
+            const curbRightGeo = new THREE.BufferGeometry();
+            const curbLPos = [], curbRPos = [], curbColors = [], curbIndices = [];
+
+            for (let i = 0; i <= TRACK_SAMPLES; i++) {
+                const idx = i % TRACK_SAMPLES;
+                const u = idx / TRACK_SAMPLES;
+                const pt = trackPoints[idx];
+                const right = trackNormals[idx];
+
+                const pL = new THREE.Vector3().copy(pt).addScaledVector(right, -TRACK_HALF_WIDTH);
+                const pR = new THREE.Vector3().copy(pt).addScaledVector(right, TRACK_HALF_WIDTH);
+
+                positions.push(pL.x, pL.y, pL.z, pR.x, pR.y, pR.z);
+
+                // Color road surface by sector: Dark Carbon Asphalt with subtle lane contrast
+                let cRoad;
+                if (u < 0.24 || u > 0.90) {
+                    cRoad = (i % 2 === 0) ? new THREE.Color(0x1e293b) : new THREE.Color(0x16202e);
+                } else if (u >= 0.24 && u < 0.46) {
+                    cRoad = (i % 2 === 0) ? new THREE.Color(0x101820) : new THREE.Color(0x0b1218);
+                } else {
+                    cRoad = (i % 2 === 0) ? new THREE.Color(0x1f242d) : new THREE.Color(0x171b22);
+                }
+                colors.push(cRoad.r, cRoad.g, cRoad.b, cRoad.r, cRoad.g, cRoad.b);
+
+                // PETRONAS Emerald Green (#00A19C) & Metallic Silver (#D4DBE2) F1 Apex Curbs
+                const cOuterL = new THREE.Vector3().copy(pt).addScaledVector(right, -(TRACK_HALF_WIDTH + 1.8));
+                const cOuterR = new THREE.Vector3().copy(pt).addScaledVector(right, (TRACK_HALF_WIDTH + 1.8));
+                curbLPos.push(cOuterL.x, cOuterL.y + 0.9, cOuterL.z, pL.x, pL.y + 0.9, pL.z);
+                curbRPos.push(pR.x, pR.y + 0.9, pR.z, cOuterR.x, cOuterR.y + 0.9, cOuterR.z);
+
+                const isEmerald = Math.floor(i / 3) % 2 === 0;
+                const cCurb = isEmerald ? new THREE.Color(0x00A19C) : new THREE.Color(0xD4DBE2);
+                curbColors.push(cCurb.r, cCurb.g, cCurb.b, cCurb.r, cCurb.g, cCurb.b);
+
+                if (i < TRACK_SAMPLES) {
+                    const a = i * 2;
+                    const b = a + 1;
+                    const c = a + 2;
+                    const d = a + 3;
+                    indices.push(a, b, c, b, d, c);
+                    curbIndices.push(a, b, c, b, d, c);
+                }
+            }
+
+            roadGeo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            roadGeo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+            roadGeo.setIndex(indices);
+            roadGeo.computeVertexNormals();
+
+            const roadMat = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });
+            const roadMesh = new THREE.Mesh(roadGeo, roadMat);
+            roadMesh.receiveShadow = true;
+            scene.add(roadMesh);
+
+            // Build Left & Right Safety Curbs
+            curbLeftGeo.setAttribute('position', new THREE.Float32BufferAttribute(curbLPos, 3));
+            curbLeftGeo.setAttribute('color', new THREE.Float32BufferAttribute(curbColors, 3));
+            curbLeftGeo.setIndex(curbIndices);
+            curbLeftGeo.computeVertexNormals();
+
+            curbRightGeo.setAttribute('position', new THREE.Float32BufferAttribute(curbRPos, 3));
+            curbRightGeo.setAttribute('color', new THREE.Float32BufferAttribute(curbColors, 3));
+            curbRightGeo.setIndex(curbIndices);
+            curbRightGeo.computeVertexNormals();
+
+            const curbMat = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });
+            scene.add(new THREE.Mesh(curbLeftGeo, curbMat));
+            scene.add(new THREE.Mesh(curbRightGeo, curbMat));
+
+            // PETRONAS Emerald & Silver Subsea Pipeline Support Legs along offshore & bridge sections
+            const legMat = new THREE.MeshLambertMaterial({ color: 0x00A19C });
+            for (let i = 0; i < TRACK_SAMPLES; i += 14) {
+                const u = i / TRACK_SAMPLES;
+                if (u < 0.45 || u > 0.82) {
+                    const pt = trackPoints[i];
+                    const right = trackNormals[i];
+                    [-1, 1].forEach(side => {
+                        const legPos = new THREE.Vector3().copy(pt).addScaledVector(right, side * (TRACK_HALF_WIDTH - 1));
+                        const leg = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.3, 14, 8), legMat);
+                        leg.position.set(legPos.x, legPos.y - 7, legPos.z);
+                        scene.add(leg);
+                    });
+                }
+            }
+
+            // Start / Finish Drilling Rig Gantry Banner at index 0
+            buildStartGantry(trackPoints[0], trackTangents[0], trackNormals[0]);
+        }
+
+        function buildStartGantry(pt, tan, right) {
+            const gantry = new THREE.Group();
+            const pillarMat = new THREE.MeshPhongMaterial({ color: 0xD4DBE2, shininess: 90 });
+            const tealMat = new THREE.MeshPhongMaterial({ color: 0x00A19C, emissive: 0x003d3b });
+            const pL = new THREE.Vector3().copy(pt).addScaledVector(right, -(TRACK_HALF_WIDTH + 1));
+            const pR = new THREE.Vector3().copy(pt).addScaledVector(right, (TRACK_HALF_WIDTH + 1));
+
+            // Twin-Tower inspired pinnacle gantry pillars on either side of the start line
+            const postGeo = new THREE.CylinderGeometry(1.4, 2.0, 20, 8);
+            const postL = new THREE.Mesh(postGeo, pillarMat);
+            postL.position.copy(pL).add(new THREE.Vector3(0, 10, 0));
+            const spireL = new THREE.Mesh(new THREE.ConeGeometry(1.4, 6, 8), tealMat);
+            spireL.position.copy(pL).add(new THREE.Vector3(0, 23, 0));
+
+            const postR = new THREE.Mesh(postGeo, pillarMat);
+            postR.position.copy(pR).add(new THREE.Vector3(0, 10, 0));
+            const spireR = new THREE.Mesh(new THREE.ConeGeometry(1.4, 6, 8), tealMat);
+            spireR.position.copy(pR).add(new THREE.Vector3(0, 23, 0));
+            gantry.add(postL, spireL, postR, spireR);
+
+            // Overhead Skybridge Truss with PETRONAS Checkered Texture
+            const checkerTex = createCheckerTexture();
+            const bannerMat = new THREE.MeshBasicMaterial({ map: checkerTex });
+            const span = (TRACK_HALF_WIDTH + 1) * 2;
+            const beam = new THREE.Mesh(new THREE.BoxGeometry(span, 3.6, 2.4), bannerMat);
+            beam.position.copy(pt).add(new THREE.Vector3(0, 16.5, 0));
+            const angle = Math.atan2(right.x, right.z);
+            beam.rotation.y = angle + Math.PI / 2;
+            gantry.add(beam);
+
+            // F1 Starting Grid Lights Bar
+            const lightBar = new THREE.Mesh(new THREE.BoxGeometry(14, 1.2, 1.2), new THREE.MeshBasicMaterial({ color: 0x00F5E1 }));
+            lightBar.position.copy(pt).add(new THREE.Vector3(0, 14.0, 0));
+            lightBar.rotation.y = angle + Math.PI / 2;
+            gantry.add(lightBar);
+
+            // Checkered Start Line Strip on Road
+            const strip = new THREE.Mesh(
+                new THREE.PlaneGeometry(TRACK_HALF_WIDTH * 2, 4.5),
+                bannerMat
+            );
+            strip.rotation.x = -Math.PI / 2;
+            strip.rotation.z = -angle + Math.PI / 2;
+            strip.position.copy(pt).add(new THREE.Vector3(0, 0.12, 0));
+            gantry.add(strip);
+
+            scene.add(gantry);
+        }
+
+        function buildOffshorePlatformProps() {
+            // 1. Giant Offshore Central Processing Platform, Derrick & Helipad
+            const rigGroup = new THREE.Group();
+            const steelMat = new THREE.MeshLambertMaterial({ color: 0x64748b });
+            const tealMat = new THREE.MeshLambertMaterial({ color: 0x00A19C });
+            const silverMat = new THREE.MeshPhongMaterial({ color: 0xD4DBE2, shininess: 80 });
+
+            // Platform Jacket Base
+            const deck = new THREE.Mesh(new THREE.BoxGeometry(70, 5, 50), steelMat);
+            deck.position.set(45, 2, -195);
+            rigGroup.add(deck);
+
+            // Twin-Pinnacle Inspired Offshore Derrick Towers
+            const derrickL = new THREE.Mesh(new THREE.ConeGeometry(9, 58, 8), silverMat);
+            derrickL.position.set(25, 33, -195);
+            const derrickR = new THREE.Mesh(new THREE.ConeGeometry(9, 58, 8), silverMat);
+            derrickR.position.set(48, 33, -195);
+            const skyBridge = new THREE.Mesh(new THREE.BoxGeometry(24, 2.5, 3.5), tealMat);
+            skyBridge.position.set(36.5, 28, -195);
+            rigGroup.add(derrickL, derrickR, skyBridge);
+
+            // Helipad with PETRONAS Emerald Ring marking
+            const helipad = new THREE.Mesh(new THREE.CylinderGeometry(16, 16, 1.5, 16), steelMat);
+            helipad.position.set(78, 6, -190);
+            const hCircle = new THREE.Mesh(new THREE.RingGeometry(9, 10.8, 24), new THREE.MeshBasicMaterial({ color: 0x00F5E1, side: THREE.DoubleSide }));
+            hCircle.rotation.x = -Math.PI / 2;
+            hCircle.position.set(78, 6.85, -190);
+            rigGroup.add(helipad, hCircle);
+
+            // Floating LNG (PFLNG) Hull & Spherical Moss Cryo-Tanks docked alongside platform
+            const flngHull = new THREE.Mesh(new THREE.BoxGeometry(95, 9, 24), new THREE.MeshLambertMaterial({ color: 0x00A19C }));
+            flngHull.position.set(-45, 1, -210);
+            rigGroup.add(flngHull);
+            [-75, -55, -35, -15].forEach(tx => {
+                const dome = new THREE.Mesh(new THREE.SphereGeometry(8.5, 16, 12), silverMat);
+                dome.position.set(tx, 7.5, -210);
+                rigGroup.add(dome);
+            });
+
+            scene.add(rigGroup);
+
+            // 2. Flare Towers shooting dynamic fire particles
+            const flareLocations = [
+                new THREE.Vector3(135, 0, -175),
+                new THREE.Vector3(215, 0, -65),
+                new THREE.Vector3(-35, 0, -190)
+            ];
+
+            flareLocations.forEach(loc => {
+                const tower = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 2.5, 42, 8), steelMat);
+                tower.position.set(loc.x, 19, loc.z);
+                scene.add(tower);
+
+                const tip = new THREE.Mesh(new THREE.CylinderGeometry(1.8, 1.2, 4, 8), tealMat);
+                tip.position.set(loc.x, 41, loc.z);
+                scene.add(tip);
+
+                // Create rising fire particles at flare tip
+                for (let p = 0; p < 8; p++) {
+                    const pMat = new THREE.MeshBasicMaterial({
+                        color: p % 2 === 0 ? 0xff6b00 : 0xfacc15
+                    });
+                    const pMesh = new THREE.Mesh(new THREE.SphereGeometry(1.8 + Math.random() * 1.5, 6, 6), pMat);
+                    const basePos = new THREE.Vector3(loc.x, 43, loc.z);
+                    pMesh.position.copy(basePos);
+                    scene.add(pMesh);
+                    animatedProps.flareParticles.push({
+                        mesh: pMesh,
+                        base: basePos,
+                        phase: Math.random() * Math.PI * 2,
+                        speed: 12 + Math.random() * 10
+                    });
+                }
+            });
+        }
+
+        function buildOnshorePumpjackProps() {
+            // 1. White & Teal Cryogenic LNG Storage Domes at the Onshore LNG Liquefaction Terminal
+            const tankDomeMat = new THREE.MeshPhongMaterial({ color: 0xf8fafc, shininess: 70 });
+            const tankBandMat = new THREE.MeshLambertMaterial({ color: 0x00A19C });
+            const lngTankCoords = [
+                [-105, 1, 130],
+                [-140, 1, 155],
+                [-195, 1, 70]
+            ];
+            lngTankCoords.forEach(([lx, ly, lz]) => {
+                const tankGroup = new THREE.Group();
+                const cyl = new THREE.Mesh(new THREE.CylinderGeometry(14, 14, 14, 20), tankDomeMat);
+                cyl.position.y = 7;
+                const band = new THREE.Mesh(new THREE.CylinderGeometry(14.2, 14.2, 2.5, 20), tankBandMat);
+                band.position.y = 11;
+                const roof = new THREE.Mesh(new THREE.SphereGeometry(14, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2), tankDomeMat);
+                roof.position.y = 14;
+                tankGroup.add(cyl, band, roof);
+                tankGroup.position.set(lx, ly, lz);
+                scene.add(tankGroup);
+            });
+
+            // 2. Gas Field Compressor Units in the Onshore Basin
+            const pumpLocations = [
+                { x: -75, y: 3, z: 120, rot: 0.4 },
+                { x: -155, y: 4, z: 125, rot: -0.8 },
+                { x: -165, y: 3, z: 215, rot: 1.1 },
+                { x: -245, y: 3, z: 95, rot: 0.2 },
+                { x: -145, y: 2, z: 15, rot: -0.3 }
+            ];
+
+            const baseMat = new THREE.MeshLambertMaterial({ color: 0x1e293b });
+            const beamMat = new THREE.MeshLambertMaterial({ color: 0xf59e0b });
+            const headMat = new THREE.MeshLambertMaterial({ color: 0xef4444 });
+
+            pumpLocations.forEach((cfg, idx) => {
+                const group = new THREE.Group();
+                group.position.set(cfg.x, cfg.y, cfg.z);
+                group.rotation.y = cfg.rot;
+
+                // A-frame Sampson Post
+                const post = new THREE.Mesh(new THREE.ConeGeometry(4.5, 13, 4), baseMat);
+                post.position.y = 6.5;
+                group.add(post);
+
+                // Pivoting Walking Beam + Horsehead
+                const pivot = new THREE.Group();
+                pivot.position.set(0, 12.5, 0);
+
+                const walkingBeam = new THREE.Mesh(new THREE.BoxGeometry(2.2, 2.0, 18), beamMat);
+                pivot.add(walkingBeam);
+
+                const horseHead = new THREE.Mesh(new THREE.CylinderGeometry(2.5, 1.2, 5.5, 8), headMat);
+                horseHead.position.set(0, -1.0, 9);
+                horseHead.rotation.x = 0.3;
+                pivot.add(horseHead);
+
+                const counterWeight = new THREE.Mesh(new THREE.BoxGeometry(3.8, 3.8, 3.8), headMat);
+                counterWeight.position.set(0, -1.2, -8.5);
+                pivot.add(counterWeight);
+
+                group.add(pivot);
+                scene.add(group);
+
+                animatedProps.pumpjacks.push({
+                    pivot,
+                    phase: idx * 1.3
+                });
+            });
+        }
+
+        function buildBoostZonesAndItemCrates() {
+            // 1. High-Pressure Primax DRS Boost Pads along the track
+            const boostIndices = [28, 105, 185, 265, 345, 415];
+            const padMat = new THREE.MeshBasicMaterial({
+                color: 0x00A19C,
+                side: THREE.DoubleSide
+            });
+            const cyanMat = new THREE.MeshBasicMaterial({
+                color: 0x00F5E1,
+                side: THREE.DoubleSide
+            });
+
+            boostIndices.forEach((bIdx, i) => {
+                const pt = trackPoints[bIdx];
+                const tan = trackTangents[bIdx];
+                const right = trackNormals[bIdx];
+                const lat = (i % 2 === 0 ? 1 : -1) * 4.5;
+                const pos = new THREE.Vector3().copy(pt).addScaledVector(right, lat);
+                pos.y += 0.18;
+
+                const padGroup = new THREE.Group();
+                padGroup.position.copy(pos);
+                padGroup.lookAt(pos.clone().add(tan));
+
+                const basePlane = new THREE.Mesh(new THREE.PlaneGeometry(8, 13), padMat);
+                basePlane.rotation.x = -Math.PI / 2;
+                padGroup.add(basePlane);
+
+                const innerPlane = new THREE.Mesh(new THREE.PlaneGeometry(5, 8), cyanMat);
+                innerPlane.rotation.x = -Math.PI / 2;
+                innerPlane.position.y = 0.05;
+                padGroup.add(innerPlane);
+
+                scene.add(padGroup);
+                animatedProps.boostChevrons.push({
+                    mesh: padGroup,
+                    position: pos,
+                    radius: 7.5
+                });
+            });
+
+            // 2. Subsea Supply Crates ("? Item Boxes") in PETRONAS Emerald & Neon Cyan
+            const crateClusters = [52, 138, 222, 310, 392];
+            const crateGeo = new THREE.OctahedronGeometry(2.3, 0);
+
+            crateClusters.forEach(cIdx => {
+                const pt = trackPoints[cIdx];
+                const right = trackNormals[cIdx];
+                [-8.5, 0, 8.5].forEach(offset => {
+                    const cPos = new THREE.Vector3().copy(pt).addScaledVector(right, offset);
+                    cPos.y += 2.6;
+
+                    const mat = new THREE.MeshPhongMaterial({
+                        color: 0x00A19C,
+                        emissive: 0x004d4a,
+                        shininess: 100,
+                        transparent: true,
+                        opacity: 0.92
+                    });
+                    const mesh = new THREE.Mesh(crateGeo, mat);
+                    mesh.position.copy(cPos);
+
+                    // Wireframe cage around subsea crate
+                    const wire = new THREE.Mesh(
+                        new THREE.BoxGeometry(3.1, 3.1, 3.1),
+                        new THREE.MeshBasicMaterial({ color: 0x00F5E1, wireframe: true })
+                    );
+                    mesh.add(wire);
+
+                    scene.add(mesh);
+                    animatedProps.itemCrates.push({
+                        mesh,
+                        basePos: cPos.clone(),
+                        active: true,
+                        respawnTimer: 0
+                    });
+                });
+            });
+
+            // 3. Seismic Shockwave Expanding Ring Effect (hidden until triggered)
+            const ringGeo = new THREE.RingGeometry(2, 5, 36);
+            ringGeo.rotateX(-Math.PI / 2);
+            const ringMat = new THREE.MeshBasicMaterial({
+                color: 0x00F5E1,
+                side: THREE.DoubleSide,
+                transparent: true,
+                opacity: 0.85
+            });
+            animatedProps.seismicRing = new THREE.Mesh(ringGeo, ringMat);
+            animatedProps.seismicRing.visible = false;
+            scene.add(animatedProps.seismicRing);
+        }
+
+        /********************************************************************
+         * 5. CUSTOM 3D PETRONAS F1 UPSTREAM KART BUILDER
+         ********************************************************************/
+        function createKartMesh(kartSpec) {
+            const root = new THREE.Group();
+
+            // Core PETRONAS F1 Materials
+            const bodyMat = new THREE.MeshPhongMaterial({ color: kartSpec.color, shininess: 110, specular: 0xffffff });
+            const accentMat = new THREE.MeshPhongMaterial({ color: kartSpec.accent, shininess: 90 });
+            const trimMat = new THREE.MeshBasicMaterial({ color: kartSpec.trim || 0x00F5E1 });
+            const carbonMat = new THREE.MeshLambertMaterial({ color: 0x101820 });
+            const tireMat = new THREE.MeshPhongMaterial({ color: 0x141a22, shininess: 30 });
+            const chromeMat = new THREE.MeshPhongMaterial({ color: 0xD4DBE2, shininess: 120 });
+
+            // 1. Sleek F1 Monocoque Central Tub & Floor Underbody Plank
+            const floorPlank = new THREE.Mesh(new THREE.BoxGeometry(3.5, 0.22, 6.2), carbonMat);
+            floorPlank.position.set(0, 0.42, 0.1);
+            root.add(floorPlank);
+
+            const monocoque = new THREE.Mesh(new THREE.BoxGeometry(1.45, 0.85, 3.8), bodyMat);
+            monocoque.position.set(0, 0.92, -0.1);
+            monocoque.castShadow = true;
+            root.add(monocoque);
+
+            // 2. Aerodynamic Sloping F1 Nose Cone
+            const noseCone = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.68, 2.5, 8), bodyMat);
+            noseCone.rotation.x = Math.PI / 2;
+            noseCone.position.set(0, 0.72, 2.75);
+            noseCone.castShadow = true;
+            root.add(noseCone);
+
+            // 3. Multi-Element F1 Front Wing + Endplates
+            const frontWingMain = new THREE.Mesh(new THREE.BoxGeometry(3.9, 0.16, 0.85), carbonMat);
+            frontWingMain.position.set(0, 0.45, 3.85);
+            const frontWingFlap = new THREE.Mesh(new THREE.BoxGeometry(3.8, 0.12, 0.45), accentMat);
+            frontWingFlap.position.set(0, 0.58, 3.68);
+            frontWingFlap.rotation.x = -0.18;
+
+            const fwEndplateGeo = new THREE.BoxGeometry(0.14, 0.62, 1.15);
+            const fwEndL = new THREE.Mesh(fwEndplateGeo, accentMat);
+            fwEndL.position.set(-1.95, 0.62, 3.8);
+            const fwEndR = new THREE.Mesh(fwEndplateGeo, accentMat);
+            fwEndR.position.set(1.95, 0.62, 3.8);
+            root.add(frontWingMain, frontWingFlap, fwEndL, fwEndR);
+
+            // 4. Sculpted Sidepods with PETRONAS Emerald Flow Stripes
+            const sidepodGeo = new THREE.BoxGeometry(0.95, 0.72, 2.75);
+            const sidepodL = new THREE.Mesh(sidepodGeo, bodyMat);
+            sidepodL.position.set(-1.12, 0.84, -0.25);
+            const sidepodR = new THREE.Mesh(sidepodGeo, bodyMat);
+            sidepodR.position.set(1.12, 0.84, -0.25);
+            root.add(sidepodL, sidepodR);
+
+            // Glowing PETRONAS Teal/Cyan Livery Stripe along sidepods
+            const stripeGeo = new THREE.BoxGeometry(1.02, 0.22, 2.8);
+            const stripeL = new THREE.Mesh(stripeGeo, accentMat);
+            stripeL.position.set(-1.12, 0.92, -0.25);
+            const stripeR = new THREE.Mesh(stripeGeo, accentMat);
+            stripeR.position.set(1.12, 0.92, -0.25);
+            root.add(stripeL, stripeR);
+
+            // 5. Overhead Airbox Intake & Engine Cover Shark Fin
+            const airbox = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.55, 1.15, 8), bodyMat);
+            airbox.position.set(0, 1.72, -0.85);
+            const sharkFin = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.85, 1.85), accentMat);
+            sharkFin.position.set(0, 1.75, -1.75);
+            root.add(airbox, sharkFin);
+
+            // 6. High-Downforce F1 Rear Wing with DRS Flap & Endplates
+            const rwEndplateGeo = new THREE.BoxGeometry(0.15, 1.35, 1.25);
+            const rwEndL = new THREE.Mesh(rwEndplateGeo, carbonMat);
+            rwEndL.position.set(-1.55, 1.75, -2.85);
+            const rwEndR = new THREE.Mesh(rwEndplateGeo, carbonMat);
+            rwEndR.position.set(1.55, 1.75, -2.85);
+
+            const rwMainPlane = new THREE.Mesh(new THREE.BoxGeometry(3.1, 0.18, 0.75), accentMat);
+            rwMainPlane.position.set(0, 1.95, -2.85);
+            const rwDrsFlap = new THREE.Mesh(new THREE.BoxGeometry(3.05, 0.14, 0.45), trimMat);
+            rwDrsFlap.position.set(0, 2.28, -3.02);
+            rwDrsFlap.rotation.x = 0.25;
+            root.add(rwEndL, rwEndR, rwMainPlane, rwDrsFlap);
+
+            // 7. F1 Cockpit, Driver Helmet & Halo Titanium Protection Bar
+            const driverHelmet = new THREE.Mesh(
+                new THREE.SphereGeometry(0.42, 12, 12),
+                new THREE.MeshPhongMaterial({ color: 0x00A19C, shininess: 100 })
+            );
+            driverHelmet.position.set(0, 1.48, -0.15);
+            const visor = new THREE.Mesh(
+                new THREE.BoxGeometry(0.55, 0.22, 0.35),
+                new THREE.MeshBasicMaterial({ color: 0x00F5E1 })
+            );
+            visor.position.set(0, 1.52, 0.15);
+            root.add(driverHelmet, visor);
+
+            // Curved F1 Halo Bar
+            const haloRing = new THREE.Mesh(new THREE.TorusGeometry(0.68, 0.08, 8, 16, Math.PI), carbonMat);
+            haloRing.rotation.x = Math.PI / 2 + 0.15;
+            haloRing.position.set(0, 1.55, -0.05);
+            const haloPillar = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.08, 0.55, 6), carbonMat);
+            haloPillar.position.set(0, 1.32, 0.6);
+            haloPillar.rotation.x = -0.35;
+            root.add(haloRing, haloPillar);
+
+            // 8. Wide Pirelli-Style Slick F1 Tires with PETRONAS Emerald Wheel Rim Stripes
+            const wheelGeo = new THREE.CylinderGeometry(0.85, 0.85, 1.05, 16);
+            wheelGeo.rotateZ(Math.PI / 2);
+            const rimRingGeo = new THREE.RingGeometry(0.45, 0.62, 16);
+
+            const wheelPositions = [
+                [-1.95, 0.85, 2.05], [1.95, 0.85, 2.05],
+                [-2.02, 0.88, -1.95], [2.02, 0.88, -1.95]
+            ];
+            wheelPositions.forEach(([wx, wy, wz]) => {
+                const wGroup = new THREE.Group();
+                wGroup.position.set(wx, wy, wz);
+                const tire = new THREE.Mesh(wheelGeo, tireMat);
+                wGroup.add(tire);
+
+                // Outer PETRONAS Teal Wheel Rim Stripe
+                const rim = new THREE.Mesh(rimRingGeo, trimMat);
+                const sign = Math.sign(wx);
+                rim.rotation.y = sign > 0 ? Math.PI / 2 : -Math.PI / 2;
+                rim.position.x = sign * 0.54;
+                wGroup.add(rim);
+                root.add(wGroup);
+            });
+
+            // 9. Distinct Upstream-F1 Hybrid Role Tech per Kart Spec
+            if (kartSpec.id === 'w15_wildcat') {
+                // Spinning PDC Rotary Diamond Drill Cone integrated at tip of F1 nose
+                const drillNose = new THREE.Mesh(new THREE.ConeGeometry(0.55, 1.45, 8), chromeMat);
+                drillNose.rotation.x = Math.PI / 2;
+                drillNose.position.set(0, 0.68, 4.45);
+                root.add(drillNose);
+                animatedProps.drillCones.push(drillNose);
+            } else if (kartSpec.id === 'primax_aero') {
+                // Dual Subsea Hydro-Thruster Pods flanking the sidepods
+                const podGeo = new THREE.CylinderGeometry(0.32, 0.38, 3.0, 10);
+                podGeo.rotateX(Math.PI / 2);
+                const podL = new THREE.Mesh(podGeo, trimMat);
+                podL.position.set(-1.55, 1.25, -0.3);
+                const podR = new THREE.Mesh(podGeo, trimMat);
+                podR.position.set(1.55, 1.25, -0.3);
+                root.add(podL, podR);
+            } else if (kartSpec.id === 'seismic_arrow') {
+                // Front-Wing 3D Acoustic Seismic Wave Emitter Dish
+                const dish = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.75, 0.22, 12), trimMat);
+                dish.position.set(0, 0.78, 3.75);
+                root.add(dish);
+            } else if (kartSpec.id === 'flng_apex') {
+                // Twin Pressurized LNG Cryo-Tanks mounted behind airbox
+                const tankGeo = new THREE.CylinderGeometry(0.28, 0.28, 2.2, 10);
+                tankGeo.rotateX(Math.PI / 2);
+                const tankL = new THREE.Mesh(tankGeo, chromeMat);
+                tankL.position.set(-0.65, 1.45, -1.55);
+                const tankR = new THREE.Mesh(tankGeo, chromeMat);
+                tankR.position.set(0.65, 1.45, -1.55);
+                root.add(tankL, tankR);
+            }
+
+            // 10. Twin Rear Diffuser Primax Flare Flames (Visible during DRS/Boosts)
+            const flameGeo = new THREE.ConeGeometry(0.55, 2.8, 8);
+            flameGeo.rotateX(-Math.PI / 2);
+            const flameMat = new THREE.MeshBasicMaterial({ color: 0x00F5E1 });
+            const flameL = new THREE.Mesh(flameGeo, flameMat);
+            flameL.position.set(-0.55, 0.75, -3.9);
+            const flameR = new THREE.Mesh(flameGeo, flameMat);
+            flameR.position.set(0.55, 0.75, -3.9);
+            flameL.visible = false;
+            flameR.visible = false;
+            root.add(flameL, flameR);
+
+            // Blowout Preventer (BOP) Invincibility Shield Dome in PETRONAS Emerald
+            const shieldGeo = new THREE.SphereGeometry(4.0, 16, 12);
+            const shieldMat = new THREE.MeshBasicMaterial({
+                color: 0x00F5E1,
+                wireframe: true,
+                transparent: true,
+                opacity: 0.65
+            });
+            const shieldMesh = new THREE.Mesh(shieldGeo, shieldMat);
+            shieldMesh.position.y = 1.4;
+            shieldMesh.visible = false;
+            root.add(shieldMesh);
+
+            // Drift Spark Octahedrons at Rear F1 Tires
+            const sparkMat = new THREE.MeshBasicMaterial({ color: 0x00A19C });
+            const sparkL = new THREE.Mesh(new THREE.OctahedronGeometry(0.55, 0), sparkMat);
+            sparkL.position.set(-2.0, 0.5, -2.3);
+            const sparkR = new THREE.Mesh(new THREE.OctahedronGeometry(0.55, 0), sparkMat);
+            sparkR.position.set(2.0, 0.5, -2.3);
+            sparkL.visible = false;
+            sparkR.visible = false;
+            root.add(sparkL, sparkR);
+
+            return {
+                group: root,
+                flames: [flameL, flameR],
+                shield: shieldMesh,
+                sparks: [sparkL, sparkR],
+                sparkMat
+            };
+        }
+
+        /********************************************************************
+         * 6. RACE STATE, AI KARTS, ITEMS & GAMEPLAY PHYSICS
+         ********************************************************************/
+        let selectedKartIndex = 0;
+        let selectedP2KartIndex = 1;
+        let numPlayers = 1; // 1: Single Player, 2: Split-Screen Multiplayer
+        let gameState = 'MENU'; // MENU | COUNTDOWN | RACING | FINISHED
+        let cameraMode = 0; // 0: Chase, 1: Close Action
+        let raceTimer = 0;
+        let countdownTimer = 0;
+        let lastCountdownBeep = 4;
+
+        let karts = [];
+        let playerKart = null;
+        let player2Kart = null;
+        let activeProjectiles = [];
+        let activeOilSlicks = [];
+        let seismicPulseTimer = 0;
+        let player1Username = 'FLNG_Racer1';
+        let player2Username = 'Cryo_Racer2';
+        let lastEarnedP1Score = 0;
+
+        // Calculate Overall Score from Finishing Rank (1st-4th) and 5-Lap Completion Time
+        function calculateOverallScore(rank, finishSeconds) {
+            const rankPoints = [1000, 750, 550, 400][rank - 1] || 350;
+            // Target benchmark for 5 laps is ~240 seconds; faster times earn up to +900 speed bonus points
+            const timeBonus = Math.max(100, Math.round((240 - finishSeconds) * 8));
+            return rankPoints + timeBonus;
+        }
+
+        // Separate control states so P1 (WASD + Touch) and P2 (Arrow Keys) can play together or solo
+        const keysP1 = { up: false, down: false, left: false, right: false, drift: false };
+        const keysP2 = { up: false, down: false, left: false, right: false, drift: false };
+
+        function createRacers() {
+            // Clear existing karts & hazards from scene
+            karts.forEach(k => scene.remove(k.visual.group));
+            activeProjectiles.forEach(p => scene.remove(p.mesh));
+            activeOilSlicks.forEach(s => scene.remove(s.mesh));
+            karts = [];
+            activeProjectiles = [];
+            activeOilSlicks = [];
+            playerKart = null;
+            player2Kart = null;
+
+            // Build 4 racers: P1, P2 (if 2P mode), and remaining AI rigs
+            let orderedSpecs = [];
+            if (numPlayers === 2) {
+                if (selectedP2KartIndex === selectedKartIndex) {
+                    selectedP2KartIndex = (selectedKartIndex + 1) % KART_ROSTER.length;
+                }
+                const p1Spec = KART_ROSTER[selectedKartIndex];
+                const p2Spec = KART_ROSTER[selectedP2KartIndex];
+                const remaining = KART_ROSTER.filter((_, idx) => idx !== selectedKartIndex && idx !== selectedP2KartIndex);
+                orderedSpecs = [p1Spec, p2Spec, ...remaining];
+            } else {
+                orderedSpecs = [
+                    KART_ROSTER[selectedKartIndex],
+                    ...KART_ROSTER.filter((_, idx) => idx !== selectedKartIndex)
+                ];
+            }
+
+            const startIdx = TRACK_SAMPLES - 8; // Just behind start line
+            orderedSpecs.forEach((spec, idx) => {
+                const isPlayer1 = idx === 0;
+                const isPlayer2 = numPlayers === 2 && idx === 1;
+                const isHuman = isPlayer1 || isPlayer2;
+                const customLabel = isPlayer1 ? player1Username : (isPlayer2 ? player2Username : spec.name);
+
+                const spIdx = (startIdx - idx * 3 + TRACK_SAMPLES) % TRACK_SAMPLES;
+                const pt = trackPoints[spIdx];
+                const tan = trackTangents[spIdx];
+                const right = trackNormals[spIdx];
+                const lateral = (idx % 2 === 0 ? -1 : 1) * 5.2;
+
+                const startPos = new THREE.Vector3().copy(pt).addScaledVector(right, lateral);
+                const heading = Math.atan2(tan.x, tan.z);
+                const visual = createKartMesh(spec);
+                visual.group.position.copy(startPos);
+                visual.group.rotation.y = heading;
+                scene.add(visual.group);
+
+                const kartObj = {
+                    isPlayer: isPlayer1,
+                    isPlayer2: isPlayer2,
+                    isHuman: isHuman,
+                    playerLabel: isPlayer1 ? 'P1' : (isPlayer2 ? 'P2' : 'AI'),
+                    driverUsername: customLabel,
+                    spec,
+                    visual,
+                    position: startPos.clone(),
+                    heading,
+                    speed: 0,
+                    steerAngle: 0, // Smoothed steering state for crisp handling
+                    trackIndex: spIdx,
+                    u: spIdx / TRACK_SAMPLES,
+                    lastU: spIdx / TRACK_SAMPLES,
+                    lap: 1,
+                    lapTimes: [],
+                    lastLapStamp: 0,
+                    totalProgress: 0,
+                    rank: idx + 1,
+                    finished: false,
+                    finishTime: 0,
+
+                    // Drift & Hop state
+                    isDrifting: false,
+                    driftDir: 0,
+                    driftCharge: 0,
+                    hopTimer: 0,
+
+                    // Power-ups & Status Timers
+                    heldItem: null,
+                    rouletteTimer: 0,
+                    boostTimer: 0,
+                    shieldTimer: 0,
+                    spinoutTimer: 0,
+                    seismicSlowTimer: 0,
+
+                    // AI pathing parameters
+                    aiTargetOffset: (Math.random() - 0.5) * 14,
+                    aiItemDelay: 1.5
+                };
+
+                karts.push(kartObj);
+                if (isPlayer1) playerKart = kartObj;
+                if (isPlayer2) player2Kart = kartObj;
+            });
+        }
+
+        function setCommentary(text) {
+            const box = document.getElementById('commentary-box');
+            if (!box) return;
+            box.textContent = text;
+            box.classList.add('scale-105', 'border-amber-300');
+            setTimeout(() => box.classList.remove('scale-105', 'border-amber-300'), 220);
+        }
+
+        function updateItemHUD() {
+            const updateSingleBox = (kart, iconId, nameId, boxId, hintId, keyText) => {
+                const iconEl = document.getElementById(iconId);
+                const nameEl = document.getElementById(nameId);
+                const boxEl = document.getElementById(boxId);
+                const hintEl = document.getElementById(hintId);
+                if (!kart || !iconEl || !nameEl || !boxEl) return;
+
+                if (kart.rouletteTimer > 0) {
+                    boxEl.classList.add('roulette-active');
+                    const rnd = UPSTREAM_ITEMS[Math.floor(Math.random() * UPSTREAM_ITEMS.length)];
+                    iconEl.textContent = rnd.icon;
+                    nameEl.textContent = 'SPINNING...';
+                    if (hintEl) hintEl.textContent = `PRESS ${keyText} TO STOP!`;
+                } else if (kart.heldItem) {
+                    boxEl.classList.remove('roulette-active');
+                    iconEl.textContent = kart.heldItem.icon;
+                    nameEl.textContent = kart.heldItem.name;
+                    if (hintEl) {
+                        hintEl.textContent = `🔥 PRESS ${keyText} NOW!`;
+                        hintEl.className = 'text-[9px] font-black text-[#00F5E1] uppercase mt-0.5 animate-pulse';
+                    }
+                } else {
+                    boxEl.classList.remove('roulette-active');
+                    iconEl.textContent = '🎁';
+                    nameEl.textContent = 'NO ITEM';
+                    if (hintEl) {
+                        hintEl.textContent = `KEY: ${keyText}`;
+                        hintEl.className = 'text-[8px] font-bold text-slate-400 uppercase mt-0.5';
+                    }
+                }
+            };
+
+            const p1KeyLabel = numPlayers === 2 ? 'E or Q' : 'E / SHIFT';
+            updateSingleBox(playerKart, 'item-icon', 'item-name', 'item-box-ui', 'p1-item-hint', p1KeyLabel);
+            if (numPlayers === 2 && player2Kart) {
+                updateSingleBox(player2Kart, 'p2-item-icon', 'p2-item-name', 'p2-item-box-ui', 'p2-item-hint', 'ENTER /');
+            }
+        }
+
+        function lockRouletteItem(kart) {
+            kart.rouletteTimer = 0;
+            const pool = kart.rank === 1
+                ? [UPSTREAM_ITEMS[0], UPSTREAM_ITEMS[1], UPSTREAM_ITEMS[2], UPSTREAM_ITEMS[4]]
+                : UPSTREAM_ITEMS;
+            kart.heldItem = pool[Math.floor(Math.random() * pool.length)];
+            if (kart.isHuman) {
+                sfx.playItemLock();
+                updateItemHUD();
+                const keyHint = kart.isPlayer2 ? 'ENTER or /' : (numPlayers === 2 ? 'E or Q' : 'E, Q, or SHIFT');
+                setCommentary(`${kart.playerLabel} READY: ${kart.heldItem.icon} ${kart.heldItem.name}! PRESS [${keyHint}] TO FIRE!`);
+            }
+        }
+
+        function triggerUseItem(kart) {
+            if (gameState !== 'RACING' || !kart || kart.finished) return;
+
+            // If roulette is still spinning when player presses Use Item, lock the item immediately and fire it on next press (or lock & fire!)
+            if (kart.rouletteTimer > 0) {
+                lockRouletteItem(kart);
+                return;
+            }
+
+            if (!kart.heldItem) {
+                if (kart.isHuman) {
+                    setCommentary(`${kart.playerLabel}: No item held! Drive through a glowing 🎁 LNG crate first!`);
+                }
+                return;
+            }
+
+            const item = kart.heldItem;
+            kart.heldItem = null;
+            if (kart.isHuman) {
+                updateItemHUD();
+                setCommentary(`${kart.playerLabel}: ${item.comment}`);
+            }
+
+            if (item.id === 'condensate') {
+                // High-Speed Clean Gas Boost
+                kart.boostTimer = 2.6;
+                kart.speed = Math.max(kart.speed, kart.spec.maxSpeed * 1.32);
+                if (kart.isHuman) sfx.playBoostRoar();
+            } else if (item.id === 'drillbit') {
+                // Spawn Homing Cryo Rocket ahead of kart
+                spawnDrillMissile(kart);
+                if (kart.isHuman) sfx.playBoostRoar();
+            } else if (item.id === 'crude') {
+                // Drop Cryo Frost Patch behind kart
+                spawnCrudeOilSlick(kart);
+                if (kart.isHuman) sfx.playTone(220, 90, 0.25, 'sine', 0.16);
+            } else if (item.id === 'seismic') {
+                // 3D Sonar Shockwave slows rivals + gives slight boost
+                seismicPulseTimer = 1.6;
+                animatedProps.seismicRing.position.copy(kart.position);
+                animatedProps.seismicRing.position.y += 1.0;
+                animatedProps.seismicRing.scale.set(1, 1, 1);
+                animatedProps.seismicRing.visible = true;
+
+                karts.forEach(other => {
+                    if (other !== kart && other.shieldTimer <= 0 && !other.finished) {
+                        other.seismicSlowTimer = 4.0;
+                        other.speed *= 0.55;
+                    }
+                });
+                kart.boostTimer = Math.max(kart.boostTimer, 1.4);
+                if (kart.isHuman) sfx.playSeismicThump();
+            } else if (item.id === 'bop') {
+                // LNG Tank Dome Invincibility Shield
+                kart.shieldTimer = 6.5;
+                kart.boostTimer = Math.max(kart.boostTimer, 2.0);
+                if (kart.isHuman) sfx.playItemLock();
+            }
+        }
+
+        function spawnDrillMissile(owner) {
+            const group = new THREE.Group();
+            const cone = new THREE.Mesh(
+                new THREE.ConeGeometry(1.3, 3.4, 8),
+                new THREE.MeshPhongMaterial({ color: 0x38bdf8, emissive: 0x0284c7 })
+            );
+            cone.rotation.x = Math.PI / 2;
+            group.add(cone);
+
+            const forward = new THREE.Vector3(Math.sin(owner.heading), 0, Math.cos(owner.heading));
+            const spawnPos = owner.position.clone().addScaledVector(forward, 5.2);
+            spawnPos.y += 1.2;
+            group.position.copy(spawnPos);
+
+            scene.add(group);
+            activeProjectiles.push({
+                owner,
+                mesh: group,
+                position: spawnPos,
+                trackIndex: owner.trackIndex,
+                life: 5.5,
+                speed: 148
+            });
+        }
+
+        function spawnCrudeOilSlick(owner) {
+            const backward = new THREE.Vector3(-Math.sin(owner.heading), 0, -Math.cos(owner.heading));
+            const dropPos = owner.position.clone().addScaledVector(backward, 4.8);
+            dropPos.y += 0.16;
+
+            const slickGeo = new THREE.CylinderGeometry(3.8, 4.2, 0.25, 14);
+            // Icy Cryogenic Frost Patch (-162°C LNG Spill)
+            const slickMat = new THREE.MeshPhongMaterial({
+                color: 0x38bdf8,
+                emissive: 0x0284c7,
+                specular: 0xffffff,
+                shininess: 140,
+                transparent: true,
+                opacity: 0.88
+            });
+            const mesh = new THREE.Mesh(slickGeo, slickMat);
+            mesh.position.copy(dropPos);
+            scene.add(mesh);
+
+            activeOilSlicks.push({
+                mesh,
+                position: dropPos,
+                life: 28
+            });
+        }
+
+        /********************************************************************
+         * 7. MAIN PHYSICS & AI SIMULATION STEP
+         ********************************************************************/
+        function updateRacePhysics(dt) {
+            if (gameState === 'COUNTDOWN') {
+                countdownTimer -= dt;
+                const cdEl = document.getElementById('countdown-display');
+                cdEl.classList.remove('hidden');
+                const ceilVal = Math.ceil(countdownTimer);
+
+                if (ceilVal !== lastCountdownBeep && ceilVal >= 0) {
+                    lastCountdownBeep = ceilVal;
+                    if (ceilVal > 0) {
+                        cdEl.textContent = ceilVal;
+                        sfx.playCountdown(false);
+                    } else {
+                        cdEl.textContent = 'GO!';
+                        sfx.playCountdown(true);
+                        sfx.startBGM();
+                        setCommentary('GREEN LIGHT! 5 LAPS — GO, GO, GO!');
+                    }
+                }
+
+                if (countdownTimer <= 0) {
+                    gameState = 'RACING';
+                    setTimeout(() => cdEl.classList.add('hidden'), 650);
+                }
+                updateCamera(dt);
+                return;
+            }
+
+            if (gameState !== 'RACING') return;
+
+            raceTimer += dt;
+
+            // 1. Update each Kart (P1, P2 & AI)
+            karts.forEach((kart) => {
+                // Decrement active timers
+                if (kart.rouletteTimer > 0) {
+                    const prevTick = Math.floor(kart.rouletteTimer * 8);
+                    kart.rouletteTimer -= dt;
+                    const currTick = Math.floor(kart.rouletteTimer * 8);
+                    if (kart.isHuman && prevTick !== currTick) {
+                        sfx.playRouletteTick();
+                        updateItemHUD();
+                    }
+                    if (kart.rouletteTimer <= 0) {
+                        lockRouletteItem(kart);
+                    }
+                }
+
+                if (kart.boostTimer > 0) kart.boostTimer -= dt;
+                if (kart.shieldTimer > 0) kart.shieldTimer -= dt;
+                if (kart.seismicSlowTimer > 0) kart.seismicSlowTimer -= dt;
+                if (kart.hopTimer > 0) kart.hopTimer -= dt;
+
+                // Determine Controls (P1 vs P2 vs AI Autopilot)
+                let throttle = 0;
+                let rawSteer = 0;
+                let wantsDrift = false;
+
+                if (kart.isPlayer && !kart.finished) {
+                    // In 1-Player mode, allow BOTH WASD and Arrow keys for P1
+                    const up = keysP1.up || (numPlayers === 1 && keysP2.up);
+                    const down = keysP1.down || (numPlayers === 1 && keysP2.down);
+                    const left = keysP1.left || (numPlayers === 1 && keysP2.left);
+                    const right = keysP1.right || (numPlayers === 1 && keysP2.right);
+                    const drift = keysP1.drift || (numPlayers === 1 && keysP2.drift);
+
+                    if (up) throttle = 1;
+                    else if (down) throttle = -1;
+                    if (left) rawSteer = 1;
+                    if (right) rawSteer = -1;
+                    wantsDrift = drift;
+                } else if (kart.isPlayer2 && !kart.finished) {
+                    if (keysP2.up) throttle = 1;
+                    else if (keysP2.down) throttle = -1;
+                    if (keysP2.left) rawSteer = 1;
+                    if (keysP2.right) rawSteer = -1;
+                    wantsDrift = keysP2.drift;
+                } else {
+                    // AI Waypoint Steering + Rubber-Banding
+                    const lookAheadIdx = (kart.trackIndex + 12) % TRACK_SAMPLES;
+                    const wpCenter = trackPoints[lookAheadIdx];
+                    const wpRight = trackNormals[lookAheadIdx];
+                    const targetPt = new THREE.Vector3().copy(wpCenter).addScaledVector(wpRight, kart.aiTargetOffset);
+
+                    const toTarget = new THREE.Vector3().subVectors(targetPt, kart.position);
+                    const desiredAngle = Math.atan2(toTarget.x, toTarget.z);
+                    let angleDiff = desiredAngle - kart.heading;
+                    while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+                    while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+
+                    rawSteer = THREE.MathUtils.clamp(angleDiff * 2.2, -1, 1);
+                    throttle = 1.0;
+
+                    // AI uses held power-ups automatically
+                    if (kart.heldItem && !kart.finished) {
+                        kart.aiItemDelay -= dt;
+                        if (kart.aiItemDelay <= 0) {
+                            triggerUseItem(kart);
+                            kart.aiItemDelay = 1.5 + Math.random() * 2.0;
+                        }
+                    }
+                }
+
+                // Smooth steering interpolation to eliminate twitchiness & make reversing intuitive
+                kart.steerAngle = THREE.MathUtils.lerp(kart.steerAngle, rawSteer, Math.min(1, dt * 14));
+
+                // Handle Spinout State
+                if (kart.spinoutTimer > 0) {
+                    kart.spinoutTimer -= dt;
+                    kart.speed *= 0.92;
+                    kart.visual.group.rotation.y += 14 * dt;
+                } else {
+                    // Top Speed & Rubber-banding calculation
+                    let topSpeed = kart.spec.maxSpeed;
+                    if (!kart.isHuman && playerKart) {
+                        const leadProgress = numPlayers === 2 && player2Kart
+                            ? Math.max(playerKart.totalProgress, player2Kart.totalProgress)
+                            : playerKart.totalProgress;
+                        const gap = leadProgress - kart.totalProgress;
+                        if (gap > 0.12) topSpeed *= 1.10;
+                        else if (gap < -0.15) topSpeed *= 0.92;
+                    }
+
+                    if (kart.boostTimer > 0) topSpeed *= 1.34;
+                    if (kart.shieldTimer > 0) topSpeed *= 1.12;
+                    if (kart.seismicSlowTimer > 0) topSpeed *= 0.65;
+
+                    // Improved Braking, Forward Acceleration & Smooth Reverse Acceleration
+                    const maxReverseSpeed = 46;
+                    if (throttle > 0) {
+                        if (kart.speed < 0) {
+                            // Fast braking out of reverse
+                            kart.speed += kart.spec.accelRate * 2.4 * dt;
+                        } else {
+                            kart.speed += kart.spec.accelRate * throttle * dt;
+                        }
+                    } else if (throttle < 0) {
+                        if (kart.speed > 2.0) {
+                            // Responsive braking while moving forward
+                            kart.speed -= kart.spec.accelRate * 2.1 * dt;
+                        } else {
+                            // Smooth, high-torque reversing when back arrow / S is held
+                            kart.speed -= kart.spec.accelRate * 0.95 * dt;
+                        }
+                    } else {
+                        // Natural coasting friction
+                        kart.speed *= Math.pow(0.38, dt);
+                        if (Math.abs(kart.speed) < 0.6) kart.speed = 0;
+                    }
+                    kart.speed = THREE.MathUtils.clamp(kart.speed, -maxReverseSpeed, topSpeed);
+
+                    // Drift & Mini-Turbo Mechanics (Only when driving forward)
+                    if (wantsDrift && Math.abs(rawSteer) > 0.1 && kart.speed > 42) {
+                        if (!kart.isDrifting) {
+                            kart.isDrifting = true;
+                            kart.driftDir = Math.sign(rawSteer);
+                            kart.hopTimer = 0.18;
+                        }
+                        kart.driftCharge = Math.min(100, kart.driftCharge + 55 * dt);
+                    } else if (kart.isDrifting) {
+                        // Release drift -> trigger Mini-Turbo if charged!
+                        if (kart.driftCharge >= 42) {
+                            kart.boostTimer = Math.max(kart.boostTimer, kart.driftCharge >= 82 ? 1.85 : 1.05);
+                            kart.speed = Math.max(kart.speed, kart.spec.maxSpeed * 1.25);
+                            if (kart.isHuman) {
+                                sfx.playBoostRoar();
+                                setCommentary(`${kart.playerLabel}: ${kart.driftCharge >= 82 ? '⚡ SUPER LNG DRIFT BOOST!' : '💨 MINI DRIFT BOOST!'}`);
+                            }
+                        }
+                        kart.isDrifting = false;
+                        kart.driftDir = 0;
+                        kart.driftCharge = 0;
+                    }
+
+                    // Improved Turning Physics (Clean low-speed & reverse steering without jitter)
+                    const absSpeed = Math.abs(kart.speed);
+                    if (absSpeed > 0.5) {
+                        const isReversing = kart.speed < -0.5;
+                        const speedFactor = isReversing
+                            ? THREE.MathUtils.clamp(absSpeed / 20, 0.55, 0.95)
+                            : THREE.MathUtils.clamp(absSpeed / 30, 0.42, 1.0);
+                        const driftMultiplier = kart.isDrifting ? 1.25 : 1.0;
+                        // Invert yaw direction smoothly when backing up, just like a real car/kart
+                        const reverseSteerDir = isReversing ? -1 : 1;
+                        kart.heading += kart.steerAngle * kart.spec.turnSpeed * driftMultiplier * speedFactor * reverseSteerDir * dt;
+                    }
+
+                    // Visual yaw angle during drift
+                    const driftYaw = kart.isDrifting ? kart.driftDir * 0.22 : 0;
+                    kart.visual.group.rotation.y = kart.heading + driftYaw;
+                }
+
+                // Advance Position along heading
+                kart.position.x += Math.sin(kart.heading) * kart.speed * dt;
+                kart.position.z += Math.cos(kart.heading) * kart.speed * dt;
+
+                // Snap to Track Surface & Wall-Gliding Safety Barrier Alignment
+                const tInfo = getClosestTrackInfo(kart.position, kart.trackIndex);
+                kart.trackIndex = tInfo.index;
+
+                // Check lateral boundary against safety barriers + auto-align heading so karts never get stuck
+                const maxOffset = TRACK_HALF_WIDTH - 2.2;
+                if (Math.abs(tInfo.lateralOffset) > maxOffset) {
+                    const clampedLat = Math.sign(tInfo.lateralOffset) * maxOffset;
+                    kart.position.x = tInfo.center.x + tInfo.right.x * clampedLat;
+                    kart.position.z = tInfo.center.z + tInfo.right.z * clampedLat;
+                    kart.speed *= 0.93;
+
+                    // Gently nudge heading parallel to track tangent when scraping walls forward
+                    if (kart.speed > 5) {
+                        const trackAngle = Math.atan2(tInfo.tangent.x, tInfo.tangent.z);
+                        let diff = trackAngle - kart.heading;
+                        while (diff > Math.PI) diff -= Math.PI * 2;
+                        while (diff < -Math.PI) diff += Math.PI * 2;
+                        kart.heading += diff * Math.min(1, dt * 4.5);
+                    }
+                }
+
+                // Height + Hop Arc
+                const hopHeight = kart.hopTimer > 0 ? Math.sin((kart.hopTimer / 0.18) * Math.PI) * 1.2 : 0;
+                kart.position.y = tInfo.center.y + hopHeight;
+                kart.visual.group.position.copy(kart.position);
+
+                // Toggle visual effects on kart (Flames, Shield, Drift Sparks)
+                const showFlames = kart.boostTimer > 0;
+                kart.visual.flames[0].visible = showFlames;
+                kart.visual.flames[1].visible = showFlames;
+                kart.visual.shield.visible = kart.shieldTimer > 0;
+
+                const showSparks = kart.isDrifting && kart.driftCharge > 15;
+                kart.visual.sparks[0].visible = showSparks;
+                kart.visual.sparks[1].visible = showSparks;
+                if (showSparks) {
+                    const sparkColor = kart.driftCharge >= 80 ? 0x00F5E1 : (kart.driftCharge >= 42 ? 0x00A19C : 0xD4DBE2);
+                    kart.visual.sparkMat.color.setHex(sparkColor);
+                }
+
+                // 5-Lap Crossing Detection
+                if (kart.lastU > 0.85 && tInfo.u < 0.15) {
+                    if (!kart.finished) {
+                        const lapDuration = raceTimer - kart.lastLapStamp;
+                        kart.lapTimes.push(lapDuration);
+                        kart.lastLapStamp = raceTimer;
+
+                        if (kart.lap >= TOTAL_LAPS) {
+                            kart.finished = true;
+                            kart.finishTime = raceTimer;
+
+                            // Check if all human players have finished
+                            const humansDone = numPlayers === 2
+                                ? (playerKart.finished && player2Kart && player2Kart.finished)
+                                : playerKart.finished;
+
+                            if (humansDone) {
+                                finishRace();
+                            } else if (kart.isHuman) {
+                                sfx.playLapChime(true);
+                                setCommentary(`🏁 ${kart.playerLabel} FINISHED ALL ${TOTAL_LAPS} LAPS!`);
+                            }
+                        } else {
+                            kart.lap++;
+                            if (kart.isHuman) {
+                                const isFinal = kart.lap === TOTAL_LAPS;
+                                if (isFinal) sfx.isFinalLap = true;
+                                sfx.playLapChime(isFinal);
+                                setCommentary(isFinal ? `🔔 ${kart.playerLabel}: FINAL LAP (LAP ${TOTAL_LAPS}/${TOTAL_LAPS})!` : `${kart.playerLabel}: LAP ${kart.lap} OF ${TOTAL_LAPS}!`);
+                            }
+                        }
+                    }
+                } else if (kart.lastU < 0.15 && tInfo.u > 0.85) {
+                    kart.lap = Math.max(1, kart.lap - 1);
+                }
+                kart.lastU = tInfo.u;
+                kart.u = tInfo.u;
+                kart.totalProgress = (kart.lap - 1) + kart.u;
+
+                // Check Speed Boost Pads
+                animatedProps.boostChevrons.forEach(pad => {
+                    if (kart.position.distanceToSquared(pad.position) < pad.radius * pad.radius) {
+                        if (kart.boostTimer <= 0.2 && kart.isHuman) {
+                            sfx.playBoostRoar();
+                            setCommentary(`⚡ ${kart.playerLabel} HIT GAS PRESSURE BOOST PAD!`);
+                        }
+                        kart.boostTimer = Math.max(kart.boostTimer, 1.35);
+                    }
+                });
+
+                // Check Item Boxes (Generous pickup radius so players never miss crates)
+                animatedProps.itemCrates.forEach(crate => {
+                    if (!crate.active) return;
+                    const dx = kart.position.x - crate.basePos.x;
+                    const dz = kart.position.z - crate.basePos.z;
+                    if (dx * dx + dz * dz < 26.0) {
+                        crate.active = false;
+                        crate.mesh.visible = false;
+                        crate.respawnTimer = 5.0;
+
+                        if (!kart.heldItem && kart.rouletteTimer <= 0) {
+                            kart.rouletteTimer = 1.05;
+                            if (kart.isHuman) {
+                                sfx.playRouletteTick();
+                                updateItemHUD();
+                                const keyHint = kart.isPlayer2 ? 'ENTER or /' : 'E or Q';
+                                setCommentary(`🎁 ${kart.playerLabel} GOT CRATE! PRESS [${keyHint}] TO LOCK & USE ITEM!`);
+                            }
+                        }
+                    }
+                });
+
+                // Check Cryo Frost Hazards
+                for (let s = activeOilSlicks.length - 1; s >= 0; s--) {
+                    const slick = activeOilSlicks[s];
+                    if (kart.position.distanceToSquared(slick.position) < 16.0) {
+                        scene.remove(slick.mesh);
+                        activeOilSlicks.splice(s, 1);
+                        if (kart.shieldTimer <= 0 && kart.spinoutTimer <= 0) {
+                            kart.spinoutTimer = 1.15;
+                            if (kart.isHuman) {
+                                sfx.playSpinout();
+                                setCommentary(`❄️ ${kart.playerLabel} SLIPPED ON CRYO FROST!`);
+                            }
+                        }
+                    }
+                }
+            });
+
+            // 2. Kart-to-Kart Bump Collisions
+            for (let i = 0; i < karts.length; i++) {
+                for (let j = i + 1; j < karts.length; j++) {
+                    const a = karts[i];
+                    const b = karts[j];
+                    const dx = b.position.x - a.position.x;
+                    const dz = b.position.z - a.position.z;
+                    const distSq = dx * dx + dz * dz;
+                    const minDist = 3.8;
+                    if (distSq < minDist * minDist && distSq > 0.001) {
+                        const dist = Math.sqrt(distSq);
+                        const nx = dx / dist;
+                        const nz = dz / dist;
+                        const overlap = (minDist - dist) * 0.5;
+                        a.position.x -= nx * overlap;
+                        a.position.z -= nz * overlap;
+                        b.position.x += nx * overlap;
+                        b.position.z += nz * overlap;
+                    }
+                }
+            }
+
+            // 3. Update Active PDC Drill Bit Missiles
+            for (let p = activeProjectiles.length - 1; p >= 0; p--) {
+                const proj = activeProjectiles[p];
+                proj.life -= dt;
+                proj.mesh.rotation.z += 18 * dt;
+
+                // Follow track spline center + home toward nearest rival ahead
+                const tInfo = getClosestTrackInfo(proj.position, proj.trackIndex);
+                proj.trackIndex = tInfo.index;
+                const nextIdx = (proj.trackIndex + 5) % TRACK_SAMPLES;
+                let targetPos = trackPoints[nextIdx].clone();
+
+                // Look for closest non-owner kart within 55 units
+                let bestTarget = null;
+                let bestDistSq = 55 * 55;
+                karts.forEach(k => {
+                    if (k !== proj.owner && !k.finished) {
+                        const d2 = k.position.distanceToSquared(proj.position);
+                        if (d2 < bestDistSq) {
+                            bestDistSq = d2;
+                            bestTarget = k;
+                        }
+                    }
+                });
+                if (bestTarget) targetPos = bestTarget.position.clone();
+
+                const dir = new THREE.Vector3().subVectors(targetPos, proj.position).normalize();
+                proj.position.addScaledVector(dir, proj.speed * dt);
+                proj.position.y = tInfo.center.y + 1.3;
+                proj.mesh.position.copy(proj.position);
+                proj.mesh.lookAt(proj.position.clone().add(dir));
+
+                // Check hit against karts
+                let hit = false;
+                karts.forEach(k => {
+                    if (k !== proj.owner && !hit) {
+                        if (k.position.distanceToSquared(proj.position) < 16.0) {
+                            hit = true;
+                            if (k.shieldTimer <= 0) {
+                                k.spinoutTimer = 1.3;
+                                k.speed *= 0.25;
+                                if (k.isHuman) {
+                                    sfx.playSpinout();
+                                    setCommentary(`🚀 ${k.playerLabel} HIT BY A CRYO ROCKET!`);
+                                } else if (proj.owner.isHuman) {
+                                    sfx.playSeismicThump();
+                                    setCommentary(`🎯 ROCKET HIT ${k.spec.name.toUpperCase()}!`);
+                                }
+                            }
+                        }
+                    }
+                });
+
+                if (hit || proj.life <= 0) {
+                    scene.remove(proj.mesh);
+                    activeProjectiles.splice(p, 1);
+                }
+            }
+
+            // 4. Update Rankings (1st - 4th)
+            const sorted = [...karts].sort((a, b) => {
+                if (a.finished && b.finished) return a.finishTime - b.finishTime;
+                if (a.finished) return -1;
+                if (b.finished) return 1;
+                return b.totalProgress - a.totalProgress;
+            });
+            sorted.forEach((k, idx) => { k.rank = idx + 1; });
+
+            // 5. Update Audio & HUD (Only run engine audio while actively racing)
+            if (playerKart) {
+                const anyHumanRacing = numPlayers === 2
+                    ? (!playerKart.finished || (player2Kart && !player2Kart.finished))
+                    : !playerKart.finished;
+
+                if (gameState === 'RACING' && anyHumanRacing) {
+                    const ratio = Math.abs(playerKart.speed) / playerKart.spec.maxSpeed;
+                    const shielded = playerKart.shieldTimer > 0 || (player2Kart && player2Kart.shieldTimer > 0);
+                    sfx.updateEngine(ratio, playerKart.isDrifting, playerKart.boostTimer > 0, shielded);
+                } else {
+                    sfx.stopEngine();
+                }
+                updateHUD();
+            }
+
+            updateCamera(dt);
+        }
+
+        /********************************************************************
+         * 8. CAMERA, ANIMATED PROPS & MINIMAP RENDERING
+         ********************************************************************/
+        function updateEnvironmentAnimations(dt, totalElapsed) {
+            // Animate offshore flare tower fire particles
+            animatedProps.flareParticles.forEach(fp => {
+                fp.phase += dt * fp.speed;
+                fp.mesh.position.y = fp.base.y + Math.sin(fp.phase) * 3.5;
+                fp.mesh.scale.setScalar(0.7 + Math.sin(fp.phase * 0.5) * 0.3);
+            });
+
+            // Animate onshore nodding donkey pumpjacks
+            animatedProps.pumpjacks.forEach(pj => {
+                const angle = Math.sin(totalElapsed * 1.8 + pj.phase) * 0.28;
+                pj.pivot.rotation.x = angle;
+            });
+
+            // Animate water mesh motion
+            if (animatedProps.waterMesh) {
+                animatedProps.waterMesh.position.y = -2.2 + Math.sin(totalElapsed * 1.2) * 0.15;
+            }
+
+            // Animate subsea item crates bobbing up and down
+            animatedProps.itemCrates.forEach(crate => {
+                if (!crate.active) {
+                    crate.respawnTimer -= dt;
+                    if (crate.respawnTimer <= 0) {
+                        crate.active = true;
+                        crate.mesh.visible = true;
+                    }
+                } else {
+                    crate.mesh.rotation.y += dt * 1.5;
+                    crate.mesh.position.y = crate.basePos.y + Math.sin(totalElapsed * 3.0 + crate.basePos.x) * 0.5;
+                }
+            });
+
+            // Animate seismic shockwave ring expansion
+            if (animatedProps.seismicRing && animatedProps.seismicRing.visible) {
+                const sc = animatedProps.seismicRing.scale.x + dt * 25;
+                animatedProps.seismicRing.scale.set(sc, sc, sc);
+                const mat = animatedProps.seismicRing.material;
+                mat.opacity = Math.max(0, 1 - (sc / 40));
+                if (sc > 40) {
+                    animatedProps.seismicRing.visible = false;
+                }
+            }
+        }
+
+        function updateSingleCamera(cam, kart, dt) {
+            if (!kart || !cam) return;
+            const dist = cameraMode === 0 ? 15.5 : 10.5;
+            const height = cameraMode === 0 ? 6.8 : 4.4;
+
+            const backX = -Math.sin(kart.heading) * dist;
+            const backZ = -Math.cos(kart.heading) * dist;
+            const desiredCamPos = new THREE.Vector3(
+                kart.position.x + backX,
+                kart.position.y + height,
+                kart.position.z + backZ
+            );
+
+            cam.position.lerp(desiredCamPos, Math.min(1, dt * 8.5));
+
+            const lookAhead = new THREE.Vector3(
+                kart.position.x + Math.sin(kart.heading) * 12,
+                kart.position.y + 2.2,
+                kart.position.z + Math.cos(kart.heading) * 12
+            );
+            cam.lookAt(lookAhead);
+        }
+
+        function updateCamera(dt) {
+            updateSingleCamera(camera, playerKart, dt);
+            if (numPlayers === 2 && player2Kart) {
+                updateSingleCamera(cameraP2, player2Kart, dt);
+            }
+        }
+
+        function formatTime(sec) {
+            const m = Math.floor(sec / 60);
+            const s = (sec % 60).toFixed(1).padStart(4, '0');
+            return `${String(m).padStart(2, '0')}:${s}`;
+        }
+
+        function updateHUD() {
+            if (!playerKart) return;
+            const suffixes = ['st', 'nd', 'rd', 'th'];
+            const r = playerKart.rank;
+            document.getElementById('hud-pos').innerHTML = `${r}<span class="text-lg">${suffixes[r - 1] || 'th'}</span>`;
+            document.getElementById('hud-lap').textContent = `${Math.min(TOTAL_LAPS, playerKart.lap)} / ${TOTAL_LAPS}`;
+            document.getElementById('hud-time').textContent = formatTime(raceTimer);
+
+            const kmhSpeed = Math.round(Math.abs(playerKart.speed) * 2.4);
+            document.getElementById('hud-speed').textContent = kmhSpeed;
+
+            const revBadge = document.getElementById('reverse-badge');
+            if (revBadge) {
+                revBadge.classList.toggle('hidden', playerKart.speed >= -1.0);
+            }
+
+            const sec = getSectorName(playerKart.u);
+            document.getElementById('hud-knots').textContent = sec.zone;
+            document.getElementById('sector-label').textContent = sec.name;
+
+            const driftPct = Math.round(playerKart.driftCharge);
+            document.getElementById('drift-bar').style.width = `${driftPct}%`;
+            const speedPct = Math.min(100, Math.round((Math.abs(playerKart.speed) / 135) * 100));
+            document.getElementById('speed-bar').style.width = `${speedPct}%`;
+
+            // Update Player 2 HUD if in Split-Screen Mode
+            if (numPlayers === 2 && player2Kart) {
+                const r2 = player2Kart.rank;
+                document.getElementById('p2-hud-pos').innerHTML = `${r2}<span class="text-lg">${suffixes[r2 - 1] || 'th'}</span>`;
+                document.getElementById('p2-hud-lap').textContent = `${Math.min(TOTAL_LAPS, player2Kart.lap)} / ${TOTAL_LAPS}`;
+                document.getElementById('p2-hud-speed').textContent = Math.round(Math.abs(player2Kart.speed) * 2.4);
+            }
+
+            drawMiniMap();
+        }
+
+        function drawMiniMap() {
+            const c = document.getElementById('minimap-canvas');
+            const ctx = c.getContext('2d');
+            ctx.clearRect(0, 0, c.width, c.height);
+
+            const scale = 0.22;
+            const cx = c.width / 2 + 4;
+            const cy = c.height / 2 - 2;
+
+            // Draw Track Loop
+            ctx.beginPath();
+            for (let i = 0; i < TRACK_SAMPLES; i += 4) {
+                const pt = trackPoints[i];
+                const x = cx + pt.x * scale;
+                const y = cy + pt.z * scale;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.closePath();
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 5;
+            ctx.stroke();
+
+            ctx.strokeStyle = '#00A19C';
+            ctx.lineWidth = 1.8;
+            ctx.stroke();
+
+            // Draw Start Line Marker
+            const st = trackPoints[0];
+            ctx.fillStyle = '#00F5E1';
+            ctx.fillRect(cx + st.x * scale - 3, cy + st.z * scale - 3, 6, 6);
+
+            // Draw Kart Dots
+            karts.forEach(k => {
+                const kx = cx + k.position.x * scale;
+                const ky = cy + k.position.z * scale;
+                ctx.beginPath();
+                ctx.arc(kx, ky, k.isHuman ? 4.5 : 3.2, 0, Math.PI * 2);
+                ctx.fillStyle = k.isPlayer ? '#ffffff' : (k.isPlayer2 ? '#fbbf24' : k.spec.hex);
+                ctx.fill();
+                if (k.isPlayer) {
+                    ctx.strokeStyle = '#00F5E1';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                } else if (k.isPlayer2) {
+                    ctx.strokeStyle = '#f59e0b';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+            });
+        }
+
+        /********************************************************************
+         * 9. UI FLOW, KART SELECTION, PODIUM & INPUT HANDLERS
+         ********************************************************************/
+        let currentMenuPage = 1;
+
+        function updateRaceSummaryCard() {
+            const p1Name = (document.getElementById('p1-username-input')?.value || 'FLNG_Racer1').trim();
+            const p2Name = (document.getElementById('p2-username-input')?.value || 'Cryo_Racer2').trim();
+            const p1Spec = KART_ROSTER[selectedKartIndex];
+            const p2Spec = KART_ROSTER[selectedP2KartIndex];
+
+            const modeEl = document.getElementById('summary-mode');
+            const p1El = document.getElementById('summary-p1');
+            const p1KartEl = document.getElementById('summary-p1-kart');
+            const p2El = document.getElementById('summary-p2');
+            const p2KartEl = document.getElementById('summary-p2-kart');
+
+            if (modeEl) modeEl.textContent = numPlayers === 2 ? '2P Split-Screen' : '1 Player vs AI';
+            if (p1El) p1El.textContent = p1Name;
+            if (p1KartEl && p1Spec) p1KartEl.textContent = `${p1Spec.name} (${p1Spec.kartName})`;
+
+            if (numPlayers === 2 && p2Spec) {
+                if (p2El) p2El.textContent = p2Name;
+                if (p2KartEl) p2KartEl.textContent = `${p2Spec.name} (${p2Spec.kartName})`;
+            } else {
+                if (p2El) p2El.textContent = '3 AI Rivals';
+                if (p2KartEl) p2KartEl.textContent = '5 Laps • Offshore to LNG';
+            }
+        }
+
+        function updateControlsPageUI() {
+            const layout1P = document.getElementById('controls-layout-1p');
+            const layout2P = document.getElementById('controls-layout-2p');
+            const badge = document.getElementById('controls-mode-badge');
+            const subtitle = document.getElementById('controls-mode-subtitle');
+            const btn1P = document.getElementById('btn-ctrl-mode-1p');
+            const btn2P = document.getElementById('btn-ctrl-mode-2p');
+
+            const p1Name = (document.getElementById('p1-username-input')?.value || 'Player 1').trim();
+            const p2Name = (document.getElementById('p2-username-input')?.value || 'Player 2').trim();
+            const p1Spec = KART_ROSTER[selectedKartIndex];
+            const p2Spec = KART_ROSTER[selectedP2KartIndex];
+
+            const p1Tag = document.getElementById('ctrl-p1-name-tag');
+            const p2Tag = document.getElementById('ctrl-p2-name-tag');
+            if (p1Tag && p1Spec) p1Tag.textContent = `${p1Name} • ${p1Spec.name}`;
+            if (p2Tag && p2Spec) p2Tag.textContent = `${p2Name} • ${p2Spec.name}`;
+
+            if (numPlayers === 1) {
+                if (layout1P) {
+                    layout1P.classList.remove('hidden');
+                    layout1P.classList.add('grid');
+                }
+                if (layout2P) {
+                    layout2P.classList.add('hidden');
+                    layout2P.classList.remove('grid');
+                }
+                if (badge) {
+                    badge.textContent = '👤 1 PLAYER SELECTED';
+                    badge.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-racing font-bold uppercase bg-[#00A19C]/25 border border-[#00F5E1] text-[#00F5E1]';
+                }
+                if (subtitle) {
+                    subtitle.textContent = `Instructions for ${p1Name} (Single Player vs 3 AI). Drive with WASD or Arrow Keys!`;
+                }
+                if (btn1P && btn2P) {
+                    btn1P.className = 'px-3 py-1.5 rounded-lg font-racing text-[10px] font-bold uppercase bg-[#00A19C] text-white border border-[#00F5E1] cursor-pointer transition';
+                    btn2P.className = 'px-3 py-1.5 rounded-lg font-racing text-[10px] font-bold uppercase bg-transparent text-slate-400 border border-transparent hover:text-white cursor-pointer transition';
+                }
+            } else {
+                if (layout1P) {
+                    layout1P.classList.add('hidden');
+                    layout1P.classList.remove('grid');
+                }
+                if (layout2P) {
+                    layout2P.classList.remove('hidden');
+                    layout2P.classList.add('grid');
+                }
+                if (badge) {
+                    badge.textContent = '👥 2 PLAYERS (SPLIT-SCREEN)';
+                    badge.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-racing font-bold uppercase bg-amber-400/20 border border-amber-300 text-amber-300';
+                }
+                if (subtitle) {
+                    subtitle.textContent = `Split-Screen Controls for ${p1Name} (Left Screen) & ${p2Name} (Right Screen) + 2 AI Rivals!`;
+                }
+                if (btn1P && btn2P) {
+                    btn2P.className = 'px-3 py-1.5 rounded-lg font-racing text-[10px] font-bold uppercase bg-amber-500 text-slate-950 border border-amber-300 cursor-pointer transition';
+                    btn1P.className = 'px-3 py-1.5 rounded-lg font-racing text-[10px] font-bold uppercase bg-transparent text-slate-400 border border-transparent hover:text-white cursor-pointer transition';
+                }
+            }
+        }
+
+        function showMenuPage(pageNum) {
+            currentMenuPage = pageNum;
+            for (let i = 1; i <= 4; i++) {
+                const pageEl = document.getElementById(`menu-page-${i}`);
+                const pillEl = document.getElementById(`step-pill-${i}`);
+                if (pageEl) {
+                    pageEl.classList.toggle('hidden', i !== pageNum);
+                }
+                if (pillEl) {
+                    if (i === pageNum) {
+                        pillEl.className = 'px-2.5 py-1.5 rounded-lg bg-[#00A19C] text-white border border-[#00F5E1] cursor-pointer transition';
+                    } else if (i < pageNum) {
+                        pillEl.className = 'px-2.5 py-1.5 rounded-lg bg-slate-800 text-[#00F5E1] border border-[#00A19C]/50 cursor-pointer transition';
+                    } else {
+                        pillEl.className = 'px-2.5 py-1.5 rounded-lg bg-slate-900 text-slate-400 border border-slate-700 cursor-pointer transition';
+                    }
+                }
+            }
+            if (pageNum === 3) {
+                updateControlsPageUI();
+            }
+            if (pageNum === 4) {
+                updateRaceSummaryCard();
+            }
+            sfx.init();
+            sfx.playRouletteTick();
+        }
+
+        function setPlayerMode(mode) {
+            numPlayers = mode;
+            const btn1P = document.getElementById('btn-mode-1p');
+            const btn2P = document.getElementById('btn-mode-2p');
+            const helper = document.getElementById('mode-helper-text');
+            const p2Hint = document.getElementById('p2-select-hint');
+
+            if (mode === 1) {
+                btn1P.className = 'flex-1 sm:flex-initial px-5 py-2.5 rounded-xl font-racing text-xs font-bold uppercase bg-[#00A19C] text-white border border-[#00F5E1] transition cursor-pointer';
+                btn2P.className = 'flex-1 sm:flex-initial px-5 py-2.5 rounded-xl font-racing text-xs font-bold uppercase bg-slate-800 text-slate-300 border border-slate-700 hover:border-[#00F5E1] transition cursor-pointer';
+                helper.textContent = 'Single Player vs 3 AI Drivers (WASD or Arrow Keys)';
+                p2Hint.classList.add('hidden');
+            } else {
+                btn2P.className = 'flex-1 sm:flex-initial px-5 py-2.5 rounded-xl font-racing text-xs font-bold uppercase bg-amber-500 text-slate-950 border border-amber-300 transition cursor-pointer';
+                btn1P.className = 'flex-1 sm:flex-initial px-5 py-2.5 rounded-xl font-racing text-xs font-bold uppercase bg-slate-800 text-slate-300 border border-slate-700 hover:border-[#00F5E1] transition cursor-pointer';
+                helper.textContent = '2-Player Split-Screen: P1 (WASD + Space/E) vs P2 (Arrows + Shift/Enter)';
+                p2Hint.classList.remove('hidden');
+                if (selectedP2KartIndex === selectedKartIndex) {
+                    selectedP2KartIndex = (selectedKartIndex + 1) % KART_ROSTER.length;
+                }
+            }
+            renderKartSelectionCards();
+            updateControlsPageUI();
+            updateRaceSummaryCard();
+            onWindowResize();
+        }
+
+        let nextClickSelectsP2 = false;
+
+        function renderKartSelectionCards() {
+            const grid = document.getElementById('kart-grid');
+            grid.innerHTML = '';
+
+            KART_ROSTER.forEach((kart, index) => {
+                const isP1 = index === selectedKartIndex;
+                const isP2 = numPlayers === 2 && index === selectedP2KartIndex;
+                const isSelected = isP1 || isP2;
+                const card = document.createElement('div');
+                card.className = `kart-card cursor-pointer rounded-xl p-4 border flex flex-col justify-between relative ${isSelected ? 'selected' : 'border-slate-700/80'}`;
+
+                let badgeHtml = '';
+                if (isP1 && isP2) {
+                    badgeHtml = `<span class="absolute top-2.5 right-2.5 px-2 py-0.5 rounded bg-[#00F5E1] text-slate-950 font-racing text-[10px] font-black">P1 & P2</span>`;
+                } else if (isP1) {
+                    badgeHtml = `<span class="absolute top-2.5 right-2.5 px-2 py-0.5 rounded bg-[#00F5E1] text-slate-950 font-racing text-[10px] font-black">P1</span>`;
+                } else if (isP2) {
+                    badgeHtml = `<span class="absolute top-2.5 right-2.5 px-2 py-0.5 rounded bg-amber-400 text-slate-950 font-racing text-[10px] font-black">P2</span>`;
+                }
+
+                card.innerHTML = `
+                    ${badgeHtml}
+                    <div>
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="shrink-0 rounded-full p-0.5 bg-slate-900">
+                                ${kart.avatarSvg}
+                            </div>
+                            <div>
+                                <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-slate-900" style="color:${kart.hex}">${kart.subtitle}</span>
+                                <h3 class="font-racing font-bold text-base text-white mt-1 leading-tight">${kart.name}</h3>
+                                <div class="text-[11px] text-slate-400">${kart.kartName}</div>
+                            </div>
+                        </div>
+                        <p class="text-xs text-slate-300 mb-3 leading-relaxed">${kart.desc}</p>
+                    </div>
+                    <div class="space-y-1.5 text-[11px] pt-2 border-t border-slate-800">
+                        <div>
+                            <div class="flex justify-between text-slate-300 mb-0.5"><span>Top Speed</span><span>${kart.stats.speed}%</span></div>
+                            <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden"><div class="h-full bg-[#00F5E1]" style="width:${kart.stats.speed}%"></div></div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-slate-300 mb-0.5"><span>Acceleration</span><span>${kart.stats.accel}%</span></div>
+                            <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden"><div class="h-full bg-[#00A19C]" style="width:${kart.stats.accel}%"></div></div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-slate-300 mb-0.5"><span>Handling</span><span>${kart.stats.handling}%</span></div>
+                            <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden"><div class="h-full bg-[#D4DBE2]" style="width:${kart.stats.handling}%"></div></div>
+                        </div>
+                    </div>
+                `;
+                card.addEventListener('click', () => {
+                    if (numPlayers === 2) {
+                        if (!nextClickSelectsP2) {
+                            selectedKartIndex = index;
+                            if (selectedP2KartIndex === index) {
+                                selectedP2KartIndex = (index + 1) % KART_ROSTER.length;
+                            }
+                            nextClickSelectsP2 = true;
+                        } else {
+                            if (index !== selectedKartIndex) {
+                                selectedP2KartIndex = index;
+                            }
+                            nextClickSelectsP2 = false;
+                        }
+                    } else {
+                        selectedKartIndex = index;
+                    }
+                    sfx.init();
+                    sfx.playRouletteTick();
+                    renderKartSelectionCards();
+                });
+                grid.appendChild(card);
+            });
+        }
+
+        function startNewRace() {
+            // Capture registered usernames from the start screen inputs
+            const p1Input = document.getElementById('p1-username-input');
+            const p2Input = document.getElementById('p2-username-input');
+            if (p1Input && p1Input.value.trim()) {
+                player1Username = p1Input.value.trim().slice(0, 16);
+            }
+            if (p2Input && p2Input.value.trim()) {
+                player2Username = p2Input.value.trim().slice(0, 16);
+            }
+
+            sfx.init();
+            sfx.stopBGM();
+            sfx.isFinalLap = false;
+            sfx.isShieldMusic = false;
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('results-screen').classList.add('hidden');
+            document.getElementById('results-screen').classList.remove('flex');
+
+            const hud = document.getElementById('hud-overlay');
+            hud.classList.remove('hidden');
+            hud.classList.add('flex');
+
+            // Toggle 2P Split-Screen UI Elements
+            const splitDiv = document.getElementById('split-divider');
+            const p2Hud = document.getElementById('p2-hud-panel');
+            const p2ItemBox = document.getElementById('p2-item-box-ui');
+            if (numPlayers === 2) {
+                splitDiv.classList.remove('hidden');
+                p2Hud.classList.remove('hidden');
+                p2Hud.classList.add('flex');
+                p2ItemBox.classList.remove('hidden');
+                p2ItemBox.classList.add('flex');
+            } else {
+                splitDiv.classList.add('hidden');
+                p2Hud.classList.add('hidden');
+                p2Hud.classList.remove('flex');
+                p2ItemBox.classList.add('hidden');
+                p2ItemBox.classList.remove('flex');
+            }
+
+            onWindowResize();
+            createRacers();
+            raceTimer = 0;
+            countdownTimer = 3.2;
+            lastCountdownBeep = 4;
+            gameState = 'COUNTDOWN';
+            updateItemHUD();
+            updateHUD();
+            setCommentary('LNG Turbines ready... Watch the starting lights!');
+        }
+
+        function finishRace() {
+            gameState = 'FINISHED';
+            sfx.stopEngine();
+            sfx.stopBGM();
+            sfx.playVictoryFanfare();
+
+            // Estimate completion times for any AI karts still on track
+            karts.forEach(k => {
+                if (!k.finished) {
+                    const remaining = Math.max(0.05, TOTAL_LAPS - k.totalProgress);
+                    k.finishTime = raceTimer + remaining * 26;
+                    k.finished = true;
+                }
+            });
+
+            const sorted = [...karts].sort((a, b) => a.finishTime - b.finishTime);
+            const pRank = sorted.findIndex(k => k.isPlayer) + 1;
+
+            const titles = [
+                '🏆 1ST PLACE! YOU WON THE LNG GRAND PRIX!',
+                '🥈 2ND PLACE! GREAT PODIUM FINISH!',
+                '🥉 3RD PLACE! PODIUM FINISH!',
+                '🏁 4TH PLACE! GOOD 5-LAP RACE!'
+            ];
+            if (numPlayers === 2) {
+                const winner = sorted[0];
+                document.getElementById('results-title').textContent = winner.isHuman
+                    ? `🏆 ${winner.playerLabel} (${winner.spec.name.toUpperCase()}) WINS!`
+                    : titles[pRank - 1];
+            } else {
+                document.getElementById('results-title').textContent = titles[pRank - 1];
+            }
+
+            const listEl = document.getElementById('standings-list');
+            listEl.innerHTML = '';
+            sorted.forEach((k, idx) => {
+                const row = document.createElement('div');
+                const kScore = calculateOverallScore(idx + 1, k.finishTime);
+                const tag = k.isPlayer ? `<span class="text-xs text-[#00F5E1]">(${k.driverUsername})</span>`
+                    : (k.isPlayer2 ? `<span class="text-xs text-amber-300">(${k.driverUsername})</span>` : '');
+                row.className = `flex items-center justify-between p-3 rounded-xl border ${k.isHuman ? 'bg-[#00A19C]/25 border-[#00F5E1]' : 'bg-[#101820]/90 border-slate-700'}`;
+                row.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <span class="font-racing font-black text-lg w-7 text-[#00F5E1]">#${idx + 1}</span>
+                        <div class="w-9 h-9 rounded-full overflow-hidden shrink-0 flex items-center justify-center bg-slate-900">
+                            ${k.spec.avatarSvg.replace('w-14 h-14', 'w-9 h-9')}
+                        </div>
+                        <div>
+                            <div class="font-bold text-sm text-white">${k.spec.name} ${tag}</div>
+                            <div class="text-[11px] text-slate-400">${k.spec.kartName} • ${formatTime(k.finishTime)}</div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="font-racing font-bold text-[#00F5E1] text-sm">${kScore} PTS</div>
+                        <div class="text-[10px] text-slate-400">Overall Score</div>
+                    </div>
+                `;
+                listEl.appendChild(row);
+            });
+
+            // Calculate & Automatically Submit Player 1 (and Player 2) Overall Score to Leaderboard
+            lastEarnedP1Score = calculateOverallScore(pRank, playerKart.finishTime);
+            const earnedEl = document.getElementById('res-earned-score');
+            const postUserInput = document.getElementById('post-username-input');
+            if (postUserInput) postUserInput.value = player1Username;
+
+            if (numPlayers === 2 && player2Kart) {
+                const p2Rank = sorted.findIndex(k => k.isPlayer2) + 1;
+                const p2Score = calculateOverallScore(p2Rank, player2Kart.finishTime);
+                if (earnedEl) {
+                    earnedEl.textContent = `${player1Username}: ${lastEarnedP1Score} PTS • ${player2Username}: ${p2Score} PTS`;
+                }
+                if (window.submitDriverScoreToCloud) {
+                    window.submitDriverScoreToCloud(player1Username, lastEarnedP1Score, playerKart.finishTime, pRank, playerKart.spec.name);
+                    window.submitDriverScoreToCloud(player2Username, p2Score, player2Kart.finishTime, p2Rank, player2Kart.spec.name);
+                }
+            } else {
+                if (earnedEl) {
+                    earnedEl.textContent = `${player1Username}: ${lastEarnedP1Score} PTS`;
+                }
+                if (window.submitDriverScoreToCloud) {
+                    window.submitDriverScoreToCloud(player1Username, lastEarnedP1Score, playerKart.finishTime, pRank, playerKart.spec.name);
+                }
+            }
+
+            // 5-Lap splits for Player 1
+            for (let i = 0; i < 5; i++) {
+                const el = document.getElementById(`res-lap${i + 1}`);
+                if (el) {
+                    el.textContent = playerKart.lapTimes[i] ? formatTime(playerKart.lapTimes[i]) : '--:--';
+                }
+            }
+            document.getElementById('res-total').textContent = formatTime(playerKart.finishTime);
+
+            const resScreen = document.getElementById('results-screen');
+            resScreen.classList.remove('hidden');
+            resScreen.classList.add('flex');
+        }
+
+        function setupInputListeners() {
+            window.addEventListener('keydown', e => {
+                // Do not trigger driving shortcuts when typing a username in an input field
+                if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
+                    return;
+                }
+                const code = e.code;
+                // Player 1 Keys (WASD + Space to Drift + E, Q, or Left Shift to Use Item)
+                if (code === 'KeyW') keysP1.up = true;
+                if (code === 'KeyS') keysP1.down = true;
+                if (code === 'KeyA') keysP1.left = true;
+                if (code === 'KeyD') keysP1.right = true;
+                if (code === 'Space') {
+                    keysP1.drift = true;
+                    e.preventDefault();
+                }
+                if (code === 'KeyE' || code === 'KeyQ' || code === 'KeyF') {
+                    e.preventDefault();
+                    if (playerKart) triggerUseItem(playerKart);
+                }
+
+                // Player 2 Keys (Arrow Keys + Right Shift to Drift + Enter / Slash / Numpad0 to Use Item)
+                if (code === 'ArrowUp') { keysP2.up = true; e.preventDefault(); }
+                if (code === 'ArrowDown') { keysP2.down = true; e.preventDefault(); }
+                if (code === 'ArrowLeft') { keysP2.left = true; e.preventDefault(); }
+                if (code === 'ArrowRight') { keysP2.right = true; e.preventDefault(); }
+
+                if (code === 'ShiftLeft') {
+                    e.preventDefault();
+                    if (playerKart) triggerUseItem(playerKart);
+                }
+                if (code === 'ShiftRight') {
+                    e.preventDefault();
+                    if (numPlayers === 2) {
+                        keysP2.drift = true;
+                    } else if (playerKart) {
+                        triggerUseItem(playerKart);
+                    }
+                }
+                if (code === 'Enter' || code === 'NumpadEnter' || code === 'Slash' || code === 'Numpad0') {
+                    e.preventDefault();
+                    if (numPlayers === 2 && player2Kart) {
+                        triggerUseItem(player2Kart);
+                    } else if (playerKart) {
+                        triggerUseItem(playerKart);
+                    }
+                }
+
+                if (code === 'KeyC') {
+                    cameraMode = (cameraMode + 1) % 2;
+                }
+                if (code === 'KeyR' && gameState === 'RACING' && playerKart) {
+                    const info = getClosestTrackInfo(playerKart.position, playerKart.trackIndex);
+                    playerKart.position.copy(info.center);
+                    playerKart.heading = Math.atan2(info.tangent.x, info.tangent.z);
+                    playerKart.speed = 0;
+                    setCommentary('🚁 P1 BACK ON TRACK!');
+                }
+            });
+
+            window.addEventListener('keyup', e => {
+                const code = e.code;
+                if (code === 'KeyW') keysP1.up = false;
+                if (code === 'KeyS') keysP1.down = false;
+                if (code === 'KeyA') keysP1.left = false;
+                if (code === 'KeyD') keysP1.right = false;
+                if (code === 'Space') keysP1.drift = false;
+
+                if (code === 'ArrowUp') keysP2.up = false;
+                if (code === 'ArrowDown') keysP2.down = false;
+                if (code === 'ArrowLeft') keysP2.left = false;
+                if (code === 'ArrowRight') keysP2.right = false;
+                if (code === 'ShiftRight') keysP2.drift = false;
+            });
+
+            // On-Screen Touch / Mouse Button Binding (Controls Player 1)
+            const bindHoldButton = (id, keyProp) => {
+                const btn = document.getElementById(id);
+                const start = (ev) => {
+                    ev.preventDefault();
+                    keysP1[keyProp] = true;
+                    btn.classList.add('pressed');
+                };
+                const end = (ev) => {
+                    ev.preventDefault();
+                    keysP1[keyProp] = false;
+                    btn.classList.remove('pressed');
+                };
+                btn.addEventListener('mousedown', start);
+                btn.addEventListener('mouseup', end);
+                btn.addEventListener('mouseleave', end);
+                btn.addEventListener('touchstart', start, { passive: false });
+                btn.addEventListener('touchend', end, { passive: false });
+            };
+
+            bindHoldButton('touch-left', 'left');
+            bindHoldButton('touch-right', 'right');
+            bindHoldButton('touch-gas', 'up');
+            bindHoldButton('touch-brake', 'down');
+            bindHoldButton('touch-drift', 'drift');
+
+            document.getElementById('touch-item').addEventListener('click', () => {
+                if (playerKart) triggerUseItem(playerKart);
+            });
+            document.getElementById('item-box-ui').addEventListener('click', () => {
+                if (playerKart) triggerUseItem(playerKart);
+            });
+            document.getElementById('p2-item-box-ui').addEventListener('click', () => {
+                if (player2Kart) triggerUseItem(player2Kart);
+            });
+
+            document.getElementById('btn-mode-1p').addEventListener('click', () => setPlayerMode(1));
+            document.getElementById('btn-mode-2p').addEventListener('click', () => setPlayerMode(2));
+            document.getElementById('btn-ctrl-mode-1p').addEventListener('click', () => setPlayerMode(1));
+            document.getElementById('btn-ctrl-mode-2p').addEventListener('click', () => setPlayerMode(2));
+
+            // Multi-Page Wizard Navigation Listeners
+            document.getElementById('btn-next-to-2').addEventListener('click', () => showMenuPage(2));
+            document.getElementById('btn-back-to-1').addEventListener('click', () => showMenuPage(1));
+            document.getElementById('btn-next-to-3').addEventListener('click', () => showMenuPage(3));
+            document.getElementById('btn-back-to-2').addEventListener('click', () => showMenuPage(2));
+            document.getElementById('btn-next-to-4').addEventListener('click', () => showMenuPage(4));
+            document.getElementById('btn-back-to-3').addEventListener('click', () => showMenuPage(3));
+
+            for (let s = 1; s <= 4; s++) {
+                const pill = document.getElementById(`step-pill-${s}`);
+                if (pill) pill.addEventListener('click', () => showMenuPage(s));
+            }
+
+            document.getElementById('btn-spud-race').addEventListener('click', startNewRace);
+            document.getElementById('btn-restart-race').addEventListener('click', startNewRace);
+            document.getElementById('btn-change-kart').addEventListener('click', () => {
+                sfx.stopBGM();
+                sfx.stopEngine();
+                document.getElementById('results-screen').classList.add('hidden');
+                document.getElementById('results-screen').classList.remove('flex');
+                document.getElementById('hud-overlay').classList.add('hidden');
+                document.getElementById('start-screen').classList.remove('hidden');
+                showMenuPage(2);
+                gameState = 'MENU';
+                onWindowResize();
+            });
+
+            document.getElementById('btn-mute').addEventListener('click', (e) => {
+                sfx.muted = !sfx.muted;
+                e.currentTarget.textContent = sfx.muted ? '🔇 MUTED' : '🔊 SOUND ON';
+                if (sfx.muted) sfx.stopEngine();
+            });
+
+            document.getElementById('btn-cam').addEventListener('click', () => {
+                cameraMode = (cameraMode + 1) % 2;
+            });
+
+            // Save / Update Username & Score on Post-Race Screen
+            const btnSaveScore = document.getElementById('btn-save-score');
+            if (btnSaveScore) {
+                btnSaveScore.addEventListener('click', () => {
+                    const postInput = document.getElementById('post-username-input');
+                    if (postInput && postInput.value.trim()) {
+                        player1Username = postInput.value.trim().slice(0, 16);
+                        const startInput = document.getElementById('p1-username-input');
+                        if (startInput) startInput.value = player1Username;
+                        if (playerKart && window.submitDriverScoreToCloud) {
+                            window.submitDriverScoreToCloud(
+                                player1Username,
+                                lastEarnedP1Score,
+                                playerKart.finishTime,
+                                playerKart.rank,
+                                playerKart.spec.name
+                            );
+                        }
+                    }
+                });
+            }
+        }
+
+        function onWindowResize() {
+            if (!camera || !renderer) return;
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            renderer.setSize(w, h);
+
+            if (numPlayers === 2 && gameState !== 'MENU') {
+                camera.aspect = (w * 0.5) / h;
+                camera.updateProjectionMatrix();
+                if (cameraP2) {
+                    cameraP2.aspect = (w * 0.5) / h;
+                    cameraP2.updateProjectionMatrix();
+                }
+            } else {
+                camera.aspect = w / h;
+                camera.updateProjectionMatrix();
+            }
+        }
+
+        /********************************************************************
+         * 10. MAIN ANIMATION LOOP (WITH 1P & 2P SPLIT-SCREEN RENDERING)
+         ********************************************************************/
+        let lastFrameTime = performance.now();
+        let totalElapsed = 0;
+
+        function animateLoop(now) {
+            requestAnimationFrame(animateLoop);
+            const dt = Math.min(0.05, (now - lastFrameTime) / 1000);
+            lastFrameTime = now;
+            totalElapsed += dt;
+
+            if (gameState === 'MENU') {
+                // Cinematic orbital flyover of the offshore gas rig & LNG terminal while in menu
+                const angle = totalElapsed * 0.16;
+                camera.position.set(
+                    Math.cos(angle) * 230,
+                    68 + Math.sin(totalElapsed * 0.4) * 14,
+                    Math.sin(angle) * 230
+                );
+                camera.lookAt(0, 8, 0);
+            } else {
+                updateRacePhysics(dt);
+            }
+
+            updateEnvironmentAnimations(dt, totalElapsed);
+
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+
+            if (numPlayers === 2 && gameState !== 'MENU' && player2Kart) {
+                // Split-Screen Rendering: Left Half = Player 1, Right Half = Player 2
+                renderer.setScissorTest(true);
+
+                const halfW = Math.floor(w * 0.5);
+                renderer.setViewport(0, 0, halfW, h);
+                renderer.setScissor(0, 0, halfW, h);
+                renderer.render(scene, camera);
+
+                renderer.setViewport(halfW, 0, w - halfW, h);
+                renderer.setScissor(halfW, 0, w - halfW, h);
+                renderer.render(scene, cameraP2);
+
+                renderer.setScissorTest(false);
+            } else {
+                renderer.setScissorTest(false);
+                renderer.setViewport(0, 0, w, h);
+                renderer.render(scene, camera);
+            }
+        }
+
+        window.onload = function () {
+            renderKartSelectionCards();
+            initThreeScene();
+            setupInputListeners();
+            createRacers();
+            requestAnimationFrame(animateLoop);
+        };
+    </script>
+
+    <!-- ==================== CLOUD LEADERBOARD & SCORE STORAGE ==================== -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        let db = null;
+        let auth = null;
+        let currentUser = null;
+
+        // Start with an empty leaderboard so only real player scores are shown
+        let leaderboardEntries = [];
+
+        function formatLbTime(sec) {
+            if (!sec || sec <= 0) return '--:--';
+            const m = Math.floor(sec / 60);
+            const s = (sec % 60).toFixed(1).padStart(4, '0');
+            return `${String(m).padStart(2, '0')}:${s}`;
+        }
+
+        function renderLeaderboardUI() {
+            const startList = document.getElementById('start-leaderboard-list');
+            const resList = document.getElementById('results-leaderboard-list');
+
+            const sorted = [...leaderboardEntries].sort((a, b) => (b.overallScore || 0) - (a.overallScore || 0));
+
+            const buildRows = (limit) => {
+                if (sorted.length === 0) {
+                    return `<div class="text-slate-400 text-xs py-2 text-center">No scores yet. Be the first to race!</div>`;
+                }
+                return sorted.slice(0, limit).map((entry, idx) => {
+                    const medal = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : `#${idx + 1}`));
+                    const isCurrentP1 = entry.username && entry.username.toLowerCase() === (document.getElementById('p1-username-input')?.value || '').trim().toLowerCase();
+                    return `
+                        <div class="flex items-center justify-between px-2.5 py-1.5 rounded-lg border ${isCurrentP1 ? 'bg-[#00A19C]/25 border-[#00F5E1]' : 'bg-slate-950/75 border-slate-800'}">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <span class="font-racing font-bold text-xs w-6 text-[#00F5E1] shrink-0">${medal}</span>
+                                <div class="truncate">
+                                    <span class="font-bold text-white">${entry.username}</span>
+                                    <span class="text-[10px] text-slate-400 ml-1">(${entry.role || 'LNG Driver'} • ${entry.racesPlayed || 1}x)</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3 shrink-0">
+                                <span class="text-[10px] text-slate-400 hidden sm:inline">⏱️ ${formatLbTime(entry.bestTime)}</span>
+                                <span class="font-racing font-bold text-amber-300 text-xs">${entry.overallScore} PTS</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            };
+
+            if (startList) startList.innerHTML = buildRows(6);
+            if (resList) resList.innerHTML = buildRows(10);
+        }
+
+        async function initLeaderboardCloud() {
+            renderLeaderboardUI();
+            const statusBadge = document.getElementById('auth-status-badge');
+
+            try {
+                if (typeof __firebase_config === 'undefined' || !__firebase_config) {
+                    if (statusBadge) statusBadge.textContent = 'Session Leaderboard Ready';
+                    return;
+                }
+
+                const firebaseConfig = JSON.parse(__firebase_config);
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+
+                // RULE 3: Authenticate FIRST before any Firestore query
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                onAuthStateChanged(auth, (user) => {
+                    currentUser = user;
+                    if (!user) return;
+                    if (statusBadge) {
+                        statusBadge.textContent = '🟢 Live Leaderboard Connected';
+                        statusBadge.className = 'text-[10px] px-2 py-0.5 rounded bg-[#00A19C]/20 text-[#00F5E1] font-semibold';
+                    }
+
+                    // RULE 1 & RULE 2: Strict path & simple collection query sorted in JS memory
+                    const lbCol = collection(db, 'artifacts', appId, 'public', 'data', 'leaderboard');
+                    onSnapshot(
+                        lbCol,
+                        (snapshot) => {
+                            const fetched = [];
+                            snapshot.forEach((docSnap) => {
+                                const data = docSnap.data();
+                                if (data && data.username) {
+                                    fetched.push(data);
+                                }
+                            });
+                            leaderboardEntries = fetched;
+                            renderLeaderboardUI();
+                        },
+                        (err) => {
+                            console.error('Leaderboard listener error:', err);
+                        }
+                    );
+                });
+            } catch (err) {
+                console.error('Leaderboard setup fallback:', err);
+                if (statusBadge) statusBadge.textContent = 'Leaderboard Active';
+            }
+        }
+
+        window.submitDriverScoreToCloud = async function (rawUsername, raceScore, finishTime, rank, roleName) {
+            const cleanName = (rawUsername || 'LNG_Driver').trim().slice(0, 16);
+            const docKey = cleanName.toLowerCase().replace(/[^a-z0-9_-]/g, '_') || 'driver';
+            const statusEl = document.getElementById('save-score-status');
+
+            // Update in-memory list immediately for responsive UI
+            const existingIdx = leaderboardEntries.findIndex(e => e.username.toLowerCase() === cleanName.toLowerCase());
+            let updatedEntry;
+            if (existingIdx >= 0) {
+                const prev = leaderboardEntries[existingIdx];
+                updatedEntry = {
+                    username: cleanName,
+                    overallScore: (prev.overallScore || 0) + raceScore,
+                    bestRaceScore: Math.max(prev.bestRaceScore || 0, raceScore),
+                    racesPlayed: (prev.racesPlayed || 1) + 1,
+                    bestTime: prev.bestTime ? Math.min(prev.bestTime, finishTime) : finishTime,
+                    lastRank: rank,
+                    role: roleName,
+                    updatedAt: Date.now()
+                };
+                leaderboardEntries[existingIdx] = updatedEntry;
+            } else {
+                updatedEntry = {
+                    username: cleanName,
+                    overallScore: raceScore,
+                    bestRaceScore: raceScore,
+                    racesPlayed: 1,
+                    bestTime: finishTime,
+                    lastRank: rank,
+                    role: roleName,
+                    updatedAt: Date.now()
+                };
+                leaderboardEntries.push(updatedEntry);
+            }
+            renderLeaderboardUI();
+
+            if (statusEl) {
+                statusEl.textContent = `✅ Saved ${cleanName} (${updatedEntry.overallScore} Overall PTS)!`;
+            }
+
+            // Persist to cloud if authenticated
+            if (db && currentUser) {
+                try {
+                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'leaderboard', docKey);
+                    await setDoc(docRef, updatedEntry, { merge: true });
+                } catch (err) {
+                    console.error('Error saving score:', err);
+                }
+            }
+        };
+
+        initLeaderboardCloud();
+    </script>
+</body>
+</html>
